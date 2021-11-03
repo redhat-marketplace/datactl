@@ -1,0 +1,3 @@
+package main
+
+//go:generate controller-gen object paths=./...
