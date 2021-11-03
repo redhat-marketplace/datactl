@@ -7,7 +7,6 @@ import (
 	"emperror.dev/errors"
 	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
-	apiv1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/homedir"
@@ -46,6 +45,12 @@ func (l *DefaultLoadingRules) Load() ([]byte, error) {
 	return data, nil
 }
 
+type LoadingRulesFunc func() ([]byte, error)
+
+func (l LoadingRulesFunc) Load() ([]byte, error) {
+	return l()
+}
+
 func LoadConfig(l LoadingRules) (*clientcmdapi.Config, error) {
 	data, err := l.Load()
 
@@ -59,7 +64,7 @@ func LoadConfig(l LoadingRules) (*clientcmdapi.Config, error) {
 		return config, nil
 	}
 
-	decoded, _, err := clientcmdlatest.Codec.Decode(data, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Kind: "Config"}, config)
+	decoded, _, err := clientcmdlatest.Codec.Decode(data, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: "Config"}, config)
 	if err != nil {
 		return nil, err
 	}

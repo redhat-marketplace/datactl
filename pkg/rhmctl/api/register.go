@@ -6,7 +6,7 @@ import (
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: "rhmctlconfig", Version: "__internal"}
+var SchemeGroupVersion = schema.GroupVersion{Group: "rhmctl", Version: "__internal"}
 
 var (
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)

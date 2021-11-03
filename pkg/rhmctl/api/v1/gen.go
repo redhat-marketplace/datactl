@@ -1,3 +1,0 @@
-package v1
-
-// go:generate cd ../../../.. && controller-gen object paths=./pkg/rhmctl/api/v1/...

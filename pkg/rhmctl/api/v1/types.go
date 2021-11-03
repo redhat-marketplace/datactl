@@ -8,8 +8,7 @@ type Config struct {
 	// +optional
 	PullSecretData string `json:"pull-secret-data,omitempty"`
 
-	// +optional
-	DataServiceEndpoints []*DataServiceEndpoint `json:"dataServiceEndpoints,omitempty"`
+	DataServiceEndpoints []*DataServiceEndpoint `json:"data-service-endpoints"`
 }
 
 type DataServiceEndpoint struct {
@@ -17,7 +16,7 @@ type DataServiceEndpoint struct {
 
 	URL string `json:"url"`
 
-	ServiceAccount *string `json:"service-account,omitempty"`
+	ServiceAccount string `json:"service-account,omitempty"`
 
 	// InsecureSkipTLSVerify skips the validity check for the server's certificate. This will make your HTTPS connections insecure.
 	// +optional

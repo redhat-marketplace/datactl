@@ -1,6 +1,7 @@
 package latest
 
 import (
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	apiv1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -11,6 +12,7 @@ import (
 
 // Version is the string that represents the current external default version.
 const Version = "v1"
+const Group = "rhmctl"
 
 var ExternalVersion = schema.GroupVersion{Group: "", Version: "v1"}
 
