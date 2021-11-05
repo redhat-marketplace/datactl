@@ -8,7 +8,8 @@ import (
 var _ = Describe("config", func() {
 	var (
 		testConfig = `
-pull-secret: my-file
+marketplace:
+  host: test.com
 data-service-endpoints:
   - cluster-context-name: my-context
     url: "https://foo.test"

@@ -1,18 +1,16 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 
-	cmdconfig "github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/config"
-	"github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/metrics"
+	"github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/metering"
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -81,17 +79,15 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 
-	cmds.ExecuteContextC(ctx context.Context)
-	cmds.Root().Context().(key interface{})
+	cfg, err2 := config.LoadConfig(&config.DefaultLoadingRules{})
+	cmdutil.CheckErr(err2)
 
 	groups := templates.CommandGroups{
 		{
 			Message: "Metering Commands:",
 			Commands: []*cobra.Command{
-				metrics.NewCmdExport(f, ioStreams),
-				metrics.NewCmdList(f, ioStreams),
-				metrics.NewCmdPipe(f, ioStreams),
-				metrics.NewCmdUpload(f, ioStreams),
+				metering.NewCmdExport(cfg, f, ioStreams),
+				metering.NewCmdList(f, ioStreams),
 			},
 		},
 		{
@@ -123,7 +119,7 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	util.SetFactoryForCompletion(f)
 	registerCompletionFuncForGlobalFlags(cmds, f)
 
-	cmds.AddCommand(cmdconfig.NewCmdConfig(clientcmd.NewDefaultPathOptions(), ioStreams))
+	//cmds.AddCommand(cmdconfig.NewCmdConfig(clientcmd.NewDefaultPathOptions(), ioStreams))
 
 	cmds.SetGlobalNormalizationFunc(cliflag.WordSepNormalizeFunc)
 

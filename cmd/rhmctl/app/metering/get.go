@@ -1,4 +1,4 @@
-package metrics
+package metering
 
 import (
 	"github.com/spf13/cobra"
@@ -7,11 +7,12 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 )
 
-func NewCmdPipe(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdList(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+
 	cmd := &cobra.Command{
-		Use:                   "pipe",
+		Use:                   "list",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Pipe dataservice data to RHM Operator"),
+		Short:                 i18n.T("List metric from RHM Operator"),
 		// Long:                  imageLong,
 		// Example:               imageExample,
 		Run: func(cmd *cobra.Command, args []string) {

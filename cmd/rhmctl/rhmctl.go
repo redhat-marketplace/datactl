@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app"
