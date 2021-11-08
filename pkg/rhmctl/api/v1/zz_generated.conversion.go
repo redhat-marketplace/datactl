@@ -22,7 +22,10 @@ limitations under the License.
 package v1
 
 import (
+	unsafe "unsafe"
+
 	api "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -84,6 +87,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*MeteringExport)(nil), (*api.MeteringExport)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_MeteringExport_To_api_MeteringExport(a.(*MeteringExport), b.(*api.MeteringExport), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*api.MeteringExport)(nil), (*MeteringExport)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_api_MeteringExport_To_v1_MeteringExport(a.(*api.MeteringExport), b.(*MeteringExport), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*MeteringFileSummary)(nil), (*api.MeteringFileSummary)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_MeteringFileSummary_To_api_MeteringFileSummary(a.(*MeteringFileSummary), b.(*api.MeteringFileSummary), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*api.MeteringFileSummary)(nil), (*MeteringFileSummary)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_api_MeteringFileSummary_To_v1_MeteringFileSummary(a.(*api.MeteringFileSummary), b.(*MeteringFileSummary), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*api.Config)(nil), (*Config)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_api_Config_To_v1_Config(a.(*api.Config), b.(*Config), scope)
 	}); err != nil {
@@ -101,6 +124,7 @@ func autoConvert_v1_Config_To_api_Config(in *Config, out *api.Config, s conversi
 	if err := Convert_v1_Marketplace_To_api_Marketplace(&in.MarketplaceEndpoint, &out.MarketplaceEndpoint, s); err != nil {
 		return err
 	}
+	// WARNING: in.MeteringExports requires manual conversion: inconvertible types ([]*./v1.MeteringExport vs map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.MeteringExport)
 	// WARNING: in.DataServiceEndpoints requires manual conversion: inconvertible types ([]*./v1.DataServiceEndpoint vs map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.DataServiceEndpoint)
 	return nil
 }
@@ -109,6 +133,8 @@ func autoConvert_api_Config_To_v1_Config(in *api.Config, out *Config, s conversi
 	if err := Convert_api_Marketplace_To_v1_Marketplace(&in.MarketplaceEndpoint, &out.MarketplaceEndpoint, s); err != nil {
 		return err
 	}
+	// WARNING: in.CurrentMeteringExport requires manual conversion: does not exist in peer-type
+	// WARNING: in.MeteringExports requires manual conversion: inconvertible types (map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.MeteringExport vs []*./v1.MeteringExport)
 	// WARNING: in.DataServiceEndpoints requires manual conversion: inconvertible types (map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.DataServiceEndpoint vs []*./v1.DataServiceEndpoint)
 	return nil
 }
@@ -119,9 +145,7 @@ func autoConvert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(in *DataServi
 	out.ServiceAccount = in.ServiceAccount
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
-	if err := conversion.Convert_Slice_byte_To_Slice_byte(&in.CertificateAuthorityData, &out.CertificateAuthorityData, s); err != nil {
-		return err
-	}
+	out.CertificateAuthorityData = *(*[]byte)(unsafe.Pointer(&in.CertificateAuthorityData))
 	out.ProxyURL = in.ProxyURL
 	return nil
 }
@@ -137,9 +161,7 @@ func autoConvert_api_DataServiceEndpoint_To_v1_DataServiceEndpoint(in *api.DataS
 	out.ServiceAccount = in.ServiceAccount
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
-	if err := conversion.Convert_Slice_byte_To_Slice_byte(&in.CertificateAuthorityData, &out.CertificateAuthorityData, s); err != nil {
-		return err
-	}
+	out.CertificateAuthorityData = *(*[]byte)(unsafe.Pointer(&in.CertificateAuthorityData))
 	out.ProxyURL = in.ProxyURL
 	return nil
 }
@@ -157,10 +179,10 @@ func autoConvert_v1_FileInfo_To_api_FileInfo(in *FileInfo, out *api.FileInfo, s 
 	out.SourceType = in.SourceType
 	out.Checksum = in.Checksum
 	out.MimeType = in.MimeType
-	out.CreatedAt = in.CreatedAt
-	out.UpdatedAt = in.UpdatedAt
-	out.DeletedAt = in.DeletedAt
-	out.Metadata = in.Metadata
+	out.CreatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.CreatedAt))
+	out.UpdatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.UpdatedAt))
+	out.DeletedAt = (*metav1.Timestamp)(unsafe.Pointer(in.DeletedAt))
+	out.Metadata = *(*map[string]string)(unsafe.Pointer(&in.Metadata))
 	return nil
 }
 
@@ -177,10 +199,10 @@ func autoConvert_api_FileInfo_To_v1_FileInfo(in *api.FileInfo, out *FileInfo, s 
 	out.SourceType = in.SourceType
 	out.Checksum = in.Checksum
 	out.MimeType = in.MimeType
-	out.CreatedAt = in.CreatedAt
-	out.UpdatedAt = in.UpdatedAt
-	out.DeletedAt = in.DeletedAt
-	out.Metadata = in.Metadata
+	out.CreatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.CreatedAt))
+	out.UpdatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.UpdatedAt))
+	out.DeletedAt = (*metav1.Timestamp)(unsafe.Pointer(in.DeletedAt))
+	out.Metadata = *(*map[string]string)(unsafe.Pointer(&in.Metadata))
 	return nil
 }
 
@@ -190,15 +212,7 @@ func Convert_api_FileInfo_To_v1_FileInfo(in *api.FileInfo, out *FileInfo, s conv
 }
 
 func autoConvert_v1_GetFileResponse_To_api_GetFileResponse(in *GetFileResponse, out *api.GetFileResponse, s conversion.Scope) error {
-	if in.Info != nil {
-		in, out := &in.Info, &out.Info
-		*out = new(api.FileInfo)
-		if err := Convert_v1_FileInfo_To_api_FileInfo(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Info = nil
-	}
+	out.Info = (*api.FileInfo)(unsafe.Pointer(in.Info))
 	return nil
 }
 
@@ -208,15 +222,7 @@ func Convert_v1_GetFileResponse_To_api_GetFileResponse(in *GetFileResponse, out 
 }
 
 func autoConvert_api_GetFileResponse_To_v1_GetFileResponse(in *api.GetFileResponse, out *GetFileResponse, s conversion.Scope) error {
-	if in.Info != nil {
-		in, out := &in.Info, &out.Info
-		*out = new(FileInfo)
-		if err := Convert_api_FileInfo_To_v1_FileInfo(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Info = nil
-	}
+	out.Info = (*FileInfo)(unsafe.Pointer(in.Info))
 	return nil
 }
 
@@ -226,15 +232,7 @@ func Convert_api_GetFileResponse_To_v1_GetFileResponse(in *api.GetFileResponse, 
 }
 
 func autoConvert_v1_ListFilesResponse_To_api_ListFilesResponse(in *ListFilesResponse, out *api.ListFilesResponse, s conversion.Scope) error {
-	if in.Files != nil {
-		in, out := &in.Files, &out.Files
-		*out = make([]*api.FileInfo, len(*in))
-		for i := range *in {
-			Convert_v1_FileInfo_To_api_FileInfo((*in)[i], (*out)[i], s)
-		}
-	} else {
-		out.Files = nil
-	}
+	out.Files = *(*[]*api.FileInfo)(unsafe.Pointer(&in.Files))
 	out.NextPageToken = in.NextPageToken
 	out.PageSize = in.PageSize
 	return nil
@@ -246,15 +244,7 @@ func Convert_v1_ListFilesResponse_To_api_ListFilesResponse(in *ListFilesResponse
 }
 
 func autoConvert_api_ListFilesResponse_To_v1_ListFilesResponse(in *api.ListFilesResponse, out *ListFilesResponse, s conversion.Scope) error {
-	if in.Files != nil {
-		in, out := &in.Files, &out.Files
-		*out = make([]*FileInfo, len(*in))
-		for i := range *in {
-			Convert_api_FileInfo_To_v1_FileInfo((*in)[i], (*out)[i], s)
-		}
-	} else {
-		out.Files = nil
-	}
+	out.Files = *(*[]*FileInfo)(unsafe.Pointer(&in.Files))
 	out.NextPageToken = in.NextPageToken
 	out.PageSize = in.PageSize
 	return nil
@@ -271,9 +261,7 @@ func autoConvert_v1_Marketplace_To_api_Marketplace(in *Marketplace, out *api.Mar
 	out.PullSecretData = in.PullSecretData
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
-	if err := conversion.Convert_Slice_byte_To_Slice_byte(&in.CertificateAuthorityData, &out.CertificateAuthorityData, s); err != nil {
-		return err
-	}
+	out.CertificateAuthorityData = *(*[]byte)(unsafe.Pointer(&in.CertificateAuthorityData))
 	out.ProxyURL = in.ProxyURL
 	return nil
 }
@@ -289,9 +277,7 @@ func autoConvert_api_Marketplace_To_v1_Marketplace(in *api.Marketplace, out *Mar
 	out.PullSecretData = in.PullSecretData
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
-	if err := conversion.Convert_Slice_byte_To_Slice_byte(&in.CertificateAuthorityData, &out.CertificateAuthorityData, s); err != nil {
-		return err
-	}
+	out.CertificateAuthorityData = *(*[]byte)(unsafe.Pointer(&in.CertificateAuthorityData))
 	out.ProxyURL = in.ProxyURL
 	return nil
 }
@@ -299,4 +285,56 @@ func autoConvert_api_Marketplace_To_v1_Marketplace(in *api.Marketplace, out *Mar
 // Convert_api_Marketplace_To_v1_Marketplace is an autogenerated conversion function.
 func Convert_api_Marketplace_To_v1_Marketplace(in *api.Marketplace, out *Marketplace, s conversion.Scope) error {
 	return autoConvert_api_Marketplace_To_v1_Marketplace(in, out, s)
+}
+
+func autoConvert_v1_MeteringExport_To_api_MeteringExport(in *MeteringExport, out *api.MeteringExport, s conversion.Scope) error {
+	out.FileName = in.FileName
+	out.Active = in.Active
+	out.Start = in.Start
+	out.End = in.End
+	out.FileInfo = *(*[]*api.MeteringFileSummary)(unsafe.Pointer(&in.FileInfo))
+	return nil
+}
+
+// Convert_v1_MeteringExport_To_api_MeteringExport is an autogenerated conversion function.
+func Convert_v1_MeteringExport_To_api_MeteringExport(in *MeteringExport, out *api.MeteringExport, s conversion.Scope) error {
+	return autoConvert_v1_MeteringExport_To_api_MeteringExport(in, out, s)
+}
+
+func autoConvert_api_MeteringExport_To_v1_MeteringExport(in *api.MeteringExport, out *MeteringExport, s conversion.Scope) error {
+	out.FileName = in.FileName
+	out.Active = in.Active
+	out.Start = in.Start
+	out.End = in.End
+	out.FileInfo = *(*[]*MeteringFileSummary)(unsafe.Pointer(&in.FileInfo))
+	return nil
+}
+
+// Convert_api_MeteringExport_To_v1_MeteringExport is an autogenerated conversion function.
+func Convert_api_MeteringExport_To_v1_MeteringExport(in *api.MeteringExport, out *MeteringExport, s conversion.Scope) error {
+	return autoConvert_api_MeteringExport_To_v1_MeteringExport(in, out, s)
+}
+
+func autoConvert_v1_MeteringFileSummary_To_api_MeteringFileSummary(in *MeteringFileSummary, out *api.MeteringFileSummary, s conversion.Scope) error {
+	out.DataServiceContext = in.DataServiceContext
+	out.Files = *(*[]*api.FileInfo)(unsafe.Pointer(&in.Files))
+	out.Committed = in.Committed
+	return nil
+}
+
+// Convert_v1_MeteringFileSummary_To_api_MeteringFileSummary is an autogenerated conversion function.
+func Convert_v1_MeteringFileSummary_To_api_MeteringFileSummary(in *MeteringFileSummary, out *api.MeteringFileSummary, s conversion.Scope) error {
+	return autoConvert_v1_MeteringFileSummary_To_api_MeteringFileSummary(in, out, s)
+}
+
+func autoConvert_api_MeteringFileSummary_To_v1_MeteringFileSummary(in *api.MeteringFileSummary, out *MeteringFileSummary, s conversion.Scope) error {
+	out.DataServiceContext = in.DataServiceContext
+	out.Files = *(*[]*FileInfo)(unsafe.Pointer(&in.Files))
+	out.Committed = in.Committed
+	return nil
+}
+
+// Convert_api_MeteringFileSummary_To_v1_MeteringFileSummary is an autogenerated conversion function.
+func Convert_api_MeteringFileSummary_To_v1_MeteringFileSummary(in *api.MeteringFileSummary, out *MeteringFileSummary, s conversion.Scope) error {
+	return autoConvert_api_MeteringFileSummary_To_v1_MeteringFileSummary(in, out, s)
 }

@@ -1,10 +1,37 @@
 package api
 
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Config struct {
 	MarketplaceEndpoint Marketplace `json:"marketplace"`
 
+	CurrentMeteringExport *MeteringExport `json:"metering-export,omitempty"`
+
+	MeteringExports map[string]*MeteringExport `json:"metering-export-history,omitempty"`
+
 	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints"`
+}
+
+type MeteringExport struct {
+	FileName string           `json:"name"`
+	Active   bool             `json:"active"`
+	Start    metav1.Timestamp `json:"start"`
+
+	// +optional
+	End metav1.Timestamp `json:"end,omitempty"`
+
+	// +optional
+	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
+}
+
+type MeteringFileSummary struct {
+	DataServiceContext string `json:"data-service-context"`
+
+	// +optional
+	Files []*FileInfo `json:"files,omitempty"`
+
+	Committed bool `json:"committed"`
 }
 
 type Marketplace struct {

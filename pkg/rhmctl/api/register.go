@@ -1,6 +1,7 @@
 package api
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -16,10 +17,10 @@ var (
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Config{},
-		&FileInfo{},
 		&ListFilesResponse{},
 		&GetFileResponse{},
 	)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }
 
@@ -30,15 +31,6 @@ func (obj *Config) SetGroupVersionKind(gvk schema.GroupVersionKind) {
 
 func (obj *Config) GroupVersionKind() schema.GroupVersionKind {
 	return schema.FromAPIVersionAndKind(SchemeGroupVersion.Group, "Config")
-}
-
-func (obj *FileInfo) GetObjectKind() schema.ObjectKind { return obj }
-
-func (obj *FileInfo) SetGroupVersionKind(gvk schema.GroupVersionKind) {
-}
-
-func (obj *FileInfo) GroupVersionKind() schema.GroupVersionKind {
-	return schema.FromAPIVersionAndKind(SchemeGroupVersion.Group, "FileInfo")
 }
 
 func (obj *ListFilesResponse) GetObjectKind() schema.ObjectKind { return obj }
