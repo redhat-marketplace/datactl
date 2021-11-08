@@ -14,6 +14,10 @@ type Config struct {
 }
 
 type MeteringExport struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
 	FileName string           `json:"name"`
 	Active   bool             `json:"active"`
 	Start    metav1.Timestamp `json:"start"`
@@ -26,6 +30,10 @@ type MeteringExport struct {
 }
 
 type MeteringFileSummary struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
 	DataServiceContext string `json:"data-service-context"`
 
 	// +optional
@@ -35,6 +43,10 @@ type MeteringFileSummary struct {
 }
 
 type Marketplace struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
 	// Host is the url of the marketplace i.e. marketplace.redhat.com
 	Host string `json:"host"`
 
@@ -70,6 +82,10 @@ type Marketplace struct {
 }
 
 type DataServiceEndpoint struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
 	ClusterContextName string `json:"cluster-context-name"`
 
 	URL string `json:"url"`
@@ -103,8 +119,10 @@ type DataServiceEndpoint struct {
 
 func NewConfig() *Config {
 	return &Config{
-		DataServiceEndpoints: make(map[string]*DataServiceEndpoint),
-		MarketplaceEndpoint:  Marketplace{},
+		DataServiceEndpoints:  make(map[string]*DataServiceEndpoint),
+		MarketplaceEndpoint:   Marketplace{},
+		CurrentMeteringExport: &MeteringExport{},
+		MeteringExports:       make(map[string]*MeteringExport),
 	}
 }
 

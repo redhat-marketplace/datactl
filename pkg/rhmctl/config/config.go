@@ -3,71 +3,227 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 
 	"emperror.dev/errors"
+	"github.com/gofrs/flock"
 	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
-	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"k8s.io/client-go/util/homedir"
 )
 
-var (
-	FileName         = "config"
-	DirectoryName    = ".rhmctl"
-	DefaultDirectory = homedir.HomeDir()
-	DefaultPath      = filepath.Join(DefaultDirectory, DirectoryName, FileName)
+// ConfigAccess is used by subcommands and methods in this package to load and modify the appropriate config files
+type ConfigAccess interface {
+	// GetLoadingPrecedence returns the slice of files that should be used for loading and inspecting the config
+	GetLoadingPrecedence() []string
+	// GetStartingConfig returns the config that subcommands should being operating against.  It may or may not be merged depending on loading rules
+	GetStartingConfig() (*rhmctlapi.Config, error)
+	// GetDefaultFilename returns the name of the file you should write into (create if necessary), if you're trying to create a new stanza as opposed to updating an existing one.
+	GetDefaultFilename() string
+	// IsExplicitFile indicates whether or not this command is interested in exactly one file.  This implementation only ever does that  via a flag, but implementations that handle local, global, and flags may have more
+	IsExplicitFile() bool
+	// GetExplicitFile returns the particular file this command is operating against.  This implementation only ever has one, but implementations that handle local, global, and flags may have more
+	GetExplicitFile() string
+}
+
+const (
+	RecommendedConfigPathFlag   = "rhmctl-config"
+	RecommendedConfigPathEnvVar = "RHMCTL_CONFIG"
+	RecommendedHomeDir          = ".rhmctl"
+	RecommendedFileName         = "config"
+	RecommendedSchemaName       = "schema"
 )
 
-type LoadingRules interface {
-	Load() ([]byte, error)
-}
+var (
+	RecommendedConfigDir  = filepath.Join(homedir.HomeDir(), RecommendedHomeDir)
+	RecommendedHomeFile   = filepath.Join(RecommendedConfigDir, RecommendedFileName)
+	RecommendedSchemaFile = filepath.Join(RecommendedConfigDir, RecommendedSchemaName)
+)
 
-type DefaultLoadingRules struct {
-	OverridePath string
-}
+var (
+	// UseModifyConfigLock ensures that access to kubeconfig file using ModifyConfig method
+	// is being guarded by a lock file.
+	// This variable is intentionaly made public so other consumers of this library
+	// can modify its default behavior, but be caution when disabling it since
+	// this will make your code not threadsafe.
+	UseModifyConfigLock = true
+)
 
-func (l *DefaultLoadingRules) Load() ([]byte, error) {
-	if l.OverridePath != "" {
-		data, err := os.ReadFile(l.OverridePath)
-		if err == nil {
-			return data, nil
+func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativizePaths bool) error {
+	if UseModifyConfigLock {
+		possibleSources := configAccess.GetLoadingPrecedence()
+		// sort the possible kubeconfig files so we always "lock" in the same order
+		// to avoid deadlock (note: this can fail w/ symlinks, but... come on).
+		sort.Strings(possibleSources)
+		for _, filename := range possibleSources {
+			filelock := flock.New(filename)
+			locked, err := filelock.TryLock()
+			if err != nil {
+				return err
+			}
+			if !locked {
+				return errors.NewWithDetails("failed to lock file", "file", filename, "filelock", filelock.String())
+			}
+			defer filelock.Unlock()
+		}
+	}
+
+	startingConfig, err := configAccess.GetStartingConfig()
+	if err != nil {
+		return err
+	}
+
+	// We need to find all differences, locate their original files, read a partial config to modify only that stanza and write out the file.
+	// Special case the test for current context and preferences since those always write to the default file.
+	if reflect.DeepEqual(*startingConfig, newConfig) {
+		// nothing to do
+		return nil
+	}
+
+	if !reflect.DeepEqual(startingConfig.MarketplaceEndpoint, newConfig.MarketplaceEndpoint) {
+		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in.MarketplaceEndpoint, newConfig.MarketplaceEndpoint) {
+				in.MarketplaceEndpoint = newConfig.MarketplaceEndpoint
+				return true, nil
+			}
+			return false, nil
+		}); err != nil {
+			return err
+		}
+	}
+
+	if !reflect.DeepEqual(*startingConfig.CurrentMeteringExport, *newConfig.CurrentMeteringExport) {
+		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(*in.CurrentMeteringExport, *newConfig.CurrentMeteringExport) {
+				in.CurrentMeteringExport = newConfig.CurrentMeteringExport
+				return true, nil
+			}
+
+			return false, nil
+		}); err != nil {
+			return err
+		}
+	}
+
+	// Search every cluster, authInfo, and context.  First from new to old for differences, then from old to new for deletions
+	for key, endpoint := range newConfig.DataServiceEndpoints {
+		startingEndpoint, exists := startingConfig.DataServiceEndpoints[key]
+
+		destinationFile := endpoint.LocationOfOrigin
+		if len(destinationFile) == 0 {
+			destinationFile = configAccess.GetDefaultFilename()
 		}
 
-		logrus.Warnf("failed to read file: %s", err)
-		logrus.Warnf("falling back to default config %s", DefaultDirectory)
+		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in, startingEndpoint) || !exists {
+				t := *endpoint
+				in.DataServiceEndpoints[key] = &t
+				in.DataServiceEndpoints[key].LocationOfOrigin = destinationFile
+
+				// if relativizePaths {
+				// 	if err := RelativizeEndpointLocalPaths(in.DataServiceEndpoints[key]); err != nil {
+				// 		return false, err
+				// 	}
+				// }
+
+				return true, nil
+			}
+
+			return false, nil
+		}); err != nil {
+			return err
+		}
 	}
 
-	data, err := os.ReadFile(DefaultPath)
-	if err != nil {
-		return data, errors.Wrap(err, "failed to load config")
+	for key, export := range newConfig.MeteringExports {
+		startingExport, exists := startingConfig.MeteringExports[key]
+		destinationFile := export.LocationOfOrigin
+
+		if len(destinationFile) == 0 {
+			destinationFile = configAccess.GetDefaultFilename()
+		}
+
+		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in, startingExport) || !exists {
+				t := *export
+				in.MeteringExports[key] = &t
+				in.MeteringExports[key].LocationOfOrigin = destinationFile
+
+				// if relativizePaths {
+				// 	if err := RelativizeEndpointLocalPaths(in.DataServiceEndpoints[key]); err != nil {
+				// 		return false, err
+				// 	}
+				// }
+
+				return true, nil
+			}
+
+			return false, nil
+		}); err != nil {
+			return err
+		}
 	}
-	return data, nil
+
+	return nil
 }
 
-type LoadingRulesFunc func() ([]byte, error)
-
-func (l LoadingRulesFunc) Load() ([]byte, error) {
-	return l()
+func getConfigFromFile(filename string) (*rhmctlapi.Config, error) {
+	config, err := LoadFromFile(filename)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	if config == nil {
+		config = clientcmdapi.NewConfig()
+	}
+	return config, nil
 }
 
-func LoadConfig(l LoadingRules) (*clientcmdapi.Config, error) {
-	data, err := l.Load()
+func writeConfig(
+	configAccess ConfigAccess,
+	mutate func(*rhmctlapi.Config) (bool, error),
+) error {
+	if configAccess.IsExplicitFile() {
+		file := configAccess.GetExplicitFile()
+		currConfig, err := getConfigFromFile(file)
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
-		return nil, err
+		writeFile, err := mutate(currConfig)
+		if !writeFile {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if err := WriteToFile(*currConfig, file); err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	config := clientcmdapi.NewConfig()
-	// if there's no data in a file, return the default object instead of failing (DecodeInto reject empty input)
-	if len(data) == 0 {
-		return config, nil
+	for _, file := range configAccess.GetLoadingPrecedence() {
+		currConfig, err := getConfigFromFile(file)
+		if err != nil {
+			return err
+		}
+
+		writeFile, err := mutate(currConfig)
+
+		if !writeFile {
+			return nil
+		}
+
+		if err := WriteToFile(*currConfig, file); err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	decoded, _, err := clientcmdlatest.Codec.Decode(data, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: "Config"}, config)
-	if err != nil {
-		return nil, err
-	}
-
-	return decoded.(*clientcmdapi.Config), nil
+	return errors.New("no config found to write preferences")
 }

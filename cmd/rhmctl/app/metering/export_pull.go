@@ -6,7 +6,6 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/gotidy/ptr"
-	"github.com/redhat-marketplace/rhmctl/pkg/clients"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
@@ -20,7 +19,8 @@ import (
 
 func NewCmdExportPull(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := exportPullOptions{
-		configFlags: genericclioptions.NewConfigFlags(false),
+		configFlags:    genericclioptions.NewConfigFlags(false),
+		rhmConfigFlags: config.NewConfigFlags(),
 	}
 
 	cmd := &cobra.Command{
@@ -33,18 +33,19 @@ func NewCmdExportPull(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams gener
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Run())
-			cmd.Help()
 		},
 	}
 
 	cmd.Flags().BoolVar(&o.includeDeleted, "include-deleted", false, "include deleted files")
 	o.configFlags.AddFlags(cmd.Flags())
+	o.rhmConfigFlags.AddFlags(cmd.Flags())
 
 	return cmd
 }
 
 type exportPullOptions struct {
-	configFlags *genericclioptions.ConfigFlags
+	configFlags    *genericclioptions.ConfigFlags
+	rhmConfigFlags *config.ConfigFlags
 
 	//flags
 	includeDeleted bool
@@ -60,19 +61,19 @@ type exportPullOptions struct {
 func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	e.args = args
 
+	e.configFlags.ToDiscoveryClient()
 	var err error
 	e.rawConfig, err = e.configFlags.ToRawKubeConfigLoader().RawConfig()
 	if err != nil {
 		return err
 	}
 
-	e.rhmRawConfig, err = config.LoadConfig(&config.DefaultLoadingRules{})
+	e.rhmRawConfig, err = e.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
 	}
 
-	e.dataService, err = clients.ProvideDataService(e.rawConfig.CurrentContext, e.rhmRawConfig)
-
+	e.dataService, err = e.rhmConfigFlags.DataServiceClient()
 	if err != nil {
 		return err
 	}
@@ -100,6 +101,8 @@ func (e *exportPullOptions) Run() error {
 	if err != nil {
 		return err
 	}
+
+	defer bundle.Close()
 
 	response := rhmctlapi.ListFilesResponse{}
 	listOpts := dataservice.ListOptions{
@@ -138,6 +141,11 @@ func (e *exportPullOptions) Run() error {
 
 		listOpts.PageSize = ptr.Int(int(response.PageSize))
 		listOpts.PageToken = response.NextPageToken
+	}
+
+	err = bundle.Close()
+	if err != nil {
+		return err
 	}
 
 	// TODO: save the config file

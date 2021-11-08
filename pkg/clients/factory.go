@@ -8,13 +8,14 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
+	"github.com/redhat-marketplace/rhmctl/pkg/clients/marketplace"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 )
 
 func ProvideDataService(
 	currentContext string,
 	rhmRawConfig *rhmctlapi.Config,
-) (dataservice.Client, error) {
+) (*dataservice.DataServiceConfig, error) {
 	dsConfig, exists := rhmRawConfig.DataServiceEndpoints[currentContext]
 
 	if !exists {
@@ -55,9 +56,15 @@ func ProvideDataService(
 
 	//TODO: generate token for dataservice
 
-	return dataservice.NewClient(&dataservice.DataServiceConfig{
+	return &dataservice.DataServiceConfig{
 		URL:       dsConfig.URL,
 		Token:     "",
 		TlsConfig: tlsConfig,
-	}), nil
+	}, nil
+}
+
+func ProvideMarketplaceUpload(
+	rhmRawConfig *rhmctlapi.Config,
+) (*marketplace.MarketplaceConfig, error) {
+	return nil, nil
 }

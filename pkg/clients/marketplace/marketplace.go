@@ -21,7 +21,7 @@ type MarketplaceConfig struct {
 type marketplaceClient struct {
 	*http.Client
 
-	MarketplaceConfig
+	*MarketplaceConfig
 
 	RoundTripperConfig *shared.RoundTripperConfig
 
@@ -32,7 +32,7 @@ type Client interface {
 	Metrics() MarketplaceMetrics
 }
 
-func NewClient(config MarketplaceConfig) Client {
+func NewClient(config *MarketplaceConfig) Client {
 	cli := &marketplaceClient{
 		Client: shared.NewHttpClient(
 			config.TlsConfig,

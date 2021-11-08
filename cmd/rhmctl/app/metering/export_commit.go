@@ -31,9 +31,8 @@ func NewCmdExportCommit(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams gen
 		// Long:                  imageLong,
 		// Example:               imageExample,
 		Run: func(cmd *cobra.Command, args []string) {
-			// cmdutil.CheckErr(o.Complete(f, cmd, args))
-			// cmdutil.CheckErr(o.Validate())
-			cmd.Help()
+			cmdutil.CheckErr(o.Complete(cmd, args))
+			cmdutil.CheckErr(o.Validate())
 			cmdutil.CheckErr(o.Run())
 		},
 	}
