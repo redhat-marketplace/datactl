@@ -23,9 +23,10 @@ type MeteringExport struct {
 }
 
 type MeteringFileSummary struct {
-	DataServiceContext string      `json:"data-service-context"`
-	Files              []*FileInfo `json:"files,omitempty"`
-	Committed          bool        `json:"committed"`
+	DataServiceContext string `json:"data-service-context"`
+	// +optional
+	Files     []*FileInfo `json:"files,omitempty"`
+	Committed bool        `json:"committed"`
 }
 
 type Marketplace struct {
@@ -69,6 +70,11 @@ type DataServiceEndpoint struct {
 	URL string `json:"url"`
 
 	ServiceAccount string `json:"service-account,omitempty"`
+
+	// Token is a filepath
+	Token string `json:"token,omitempty"`
+
+	TokenData string `json:"token-data,omitempty"`
 
 	// InsecureSkipTLSVerify skips the validity check for the server's certificate. This will make your HTTPS connections insecure.
 	// +optional

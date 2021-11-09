@@ -2,10 +2,14 @@ package metering
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"time"
 
 	"emperror.dev/errors"
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 )
 
 type BundleFile struct {
@@ -48,6 +52,10 @@ func (f *BundleFile) open(filepath string) error {
 	return nil
 }
 
+func (f *BundleFile) Name() string {
+	return f.file.Name()
+}
+
 func (f *BundleFile) NewFile(filename string, size int64) (io.Writer, error) {
 	hdr := &tar.Header{
 		Name: filename,
@@ -63,4 +71,18 @@ func (f *BundleFile) NewFile(filename string, size int64) (io.Writer, error) {
 
 func (f *BundleFile) Close() error {
 	return errors.Combine(f.tar.Close(), f.file.Close())
+}
+
+func NewBundleWithDefaultName() (*BundleFile, error) {
+	timestamp := time.Now().Format("20060102T150405Z")
+	filename := filepath.Join(config.RecommendedDataDir, fmt.Sprintf("rhm-upload-%s.tar", timestamp))
+
+	dir := filepath.Dir(filename)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return nil, err
+		}
+	}
+
+	return NewBundle(filename)
 }

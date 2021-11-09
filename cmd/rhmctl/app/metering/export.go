@@ -3,15 +3,15 @@ package metering
 import (
 	"fmt"
 
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/i18n"
 
-	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
-func NewCmdExport(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdExport(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "export",
 		DisableFlagsInUseLine: true,
@@ -26,10 +26,9 @@ func NewCmdExport(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericcl
 		},
 	}
 
-	cmd.AddCommand(NewCmdExportStart(conf, f, ioStreams))
-	cmd.AddCommand(NewCmdExportPull(conf, f, ioStreams))
-	cmd.AddCommand(NewCmdExportCommit(conf, f, ioStreams))
-	cmd.AddCommand(NewCmdExportPush(conf, f, ioStreams))
+	cmd.AddCommand(NewCmdExportPull(rhmFlags, f, ioStreams))
+	cmd.AddCommand(NewCmdExportCommit(rhmFlags, f, ioStreams))
+	cmd.AddCommand(NewCmdExportPush(f, ioStreams))
 
 	return cmd
 }

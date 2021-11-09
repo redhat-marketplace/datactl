@@ -14,7 +14,7 @@ import (
 const Version = "v1"
 const Group = "rhmctl"
 
-var ExternalVersion = schema.GroupVersion{Group: "", Version: "v1"}
+var ExternalVersion = schema.GroupVersion{Group: "rhmctl", Version: "v1"}
 
 // OldestVersion is the string that represents the oldest server version supported,
 // for client code that wants to hardcode the lowest common denominator.
@@ -40,7 +40,7 @@ func init() {
 		Scheme,
 		yamlSerializer,
 		yamlSerializer,
-		schema.GroupVersion{Version: Version},
+		schema.GroupVersion{Version: Version, Group: Group},
 		runtime.InternalGroupVersioner,
 	)
 }

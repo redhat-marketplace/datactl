@@ -15,6 +15,8 @@ type ClientConfig interface {
 	MarketplaceClientConfig() (*marketplace.MarketplaceConfig, error)
 
 	DataServiceClientConfig() (*dataservice.DataServiceConfig, error)
+
+	ConfigAccess() ConfigAccess
 }
 
 type clientConfig struct {
@@ -47,4 +49,8 @@ func (c *clientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig
 	}
 
 	return config, err
+}
+
+func (c *clientConfig) ConfigAccess() ConfigAccess {
+	return c.defaultClientConfig.ConfigAccess()
 }

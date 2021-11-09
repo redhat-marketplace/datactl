@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	configcmd "github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/config"
 	"github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/metering"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -75,18 +76,21 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
+	rawConf, confErr := kubeConfigFlags.ToRawKubeConfigLoader().RawConfig()
+	cmdutil.CheckErr(confErr)
+
+	rhmConfigFlags := config.NewConfigFlags(rawConf.CurrentContext)
+	rhmConfigFlags.AddFlags(flags)
+
 	i18n.LoadTranslations("rhmctl", nil)
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
-
-	cfg, err2 := config.LoadConfig(&config.DefaultLoadingRules{})
-	cmdutil.CheckErr(err2)
 
 	groups := templates.CommandGroups{
 		{
 			Message: "Metering Commands:",
 			Commands: []*cobra.Command{
-				metering.NewCmdExport(cfg, f, ioStreams),
+				metering.NewCmdExport(rhmConfigFlags, f, ioStreams),
 				metering.NewCmdList(f, ioStreams),
 			},
 		},
@@ -97,13 +101,14 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 				// MustGather
 			},
 		},
-		// {
-		// 	Message:  "Settings Commands:",
-		// 	Commands: []*cobra.Command{
-		// 		// Proxy
-		// 		// EnvVars
-		// 	},
-		// },
+		{
+			Message: "Settings Commands:",
+			Commands: []*cobra.Command{
+				configcmd.NewCmdConfig(rhmConfigFlags, f, ioStreams),
+				// Proxy
+				// EnvVars
+			},
+		},
 	}
 	groups.Add(cmds)
 

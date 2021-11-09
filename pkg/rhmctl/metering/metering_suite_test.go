@@ -1,10 +1,11 @@
 package metering
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
-	"testing"
 )
 
 func TestMetering(t *testing.T) {

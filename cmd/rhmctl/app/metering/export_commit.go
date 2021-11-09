@@ -7,8 +7,6 @@ import (
 	"io"
 	"time"
 
-	"emperror.dev/errors"
-	"github.com/redhat-marketplace/rhmctl/pkg/clients"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
@@ -21,8 +19,11 @@ import (
 	"k8s.io/kubectl/pkg/util/i18n"
 )
 
-func NewCmdExportCommit(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	o := exportCommitOptions{}
+func NewCmdExportCommit(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+	o := exportCommitOptions{
+		configFlags:    genericclioptions.NewConfigFlags(false),
+		rhmConfigFlags: rhmFlags,
+	}
 
 	cmd := &cobra.Command{
 		Use:                   "commit",
@@ -41,7 +42,8 @@ func NewCmdExportCommit(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams gen
 }
 
 type exportCommitOptions struct {
-	configFlags *genericclioptions.ConfigFlags
+	configFlags    *genericclioptions.ConfigFlags
+	rhmConfigFlags *config.ConfigFlags
 
 	//internal
 	args      []string
@@ -49,6 +51,8 @@ type exportCommitOptions struct {
 
 	rhmRawConfig *rhmctlapi.Config
 	dataService  dataservice.Client
+
+	currentMeteringExport *rhmctlapi.MeteringExport
 }
 
 func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error {
@@ -60,23 +64,26 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 		return err
 	}
 
-	c.rhmRawConfig, err = config.LoadConfig(&config.DefaultLoadingRules{})
+	c.rhmRawConfig, err = c.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
+	}
+
+	c.dataService, err = c.rhmConfigFlags.DataServiceClient()
+	if err != nil {
+		return err
+	}
+
+	for _, export := range c.rhmRawConfig.MeteringExports {
+		if export.Active == true {
+			c.currentMeteringExport = export
+		}
 	}
 
 	return nil
 }
 
 func (c *exportCommitOptions) Validate() error {
-	if c.rhmRawConfig.CurrentMeteringExport == nil {
-		return errors.New("command requires a current export; run `rhmctl export start`")
-	}
-
-	if c.rhmRawConfig.CurrentMeteringExport.FileName == "" {
-		return errors.New("command requires a current export file")
-	}
-
 	return nil
 }
 
@@ -84,26 +91,20 @@ func (c *exportCommitOptions) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	bundle, err := metering.NewBundle(c.rhmRawConfig.CurrentMeteringExport.FileName)
+	bundle, err := metering.NewBundle(c.currentMeteringExport.FileName)
 	if err != nil {
 		return err
 	}
 
 	defer bundle.Close()
 
-	for _, info := range c.rhmRawConfig.CurrentMeteringExport.FileInfo {
+	for _, info := range c.currentMeteringExport.FileInfo {
 		if info.Committed {
 			continue
 		}
 
-		dataService, err := clients.ProvideDataService(info.DataServiceContext, c.rhmRawConfig)
-
-		if err != nil {
-			return err
-		}
-
 		for _, f := range info.Files {
-			err := dataService.DeleteFile(ctx, f.Id)
+			err := c.dataService.DeleteFile(ctx, f.Id)
 			if err != nil {
 				logrus.WithError(err).WithField("id", f.Id).Warn("failed to delete file")
 			}
@@ -124,8 +125,9 @@ func (c *exportCommitOptions) Run() error {
 		return err
 	}
 
-	// TODO: save the config file
-	// TODO: save the metering export data
+	if err := config.ModifyConfig(c.rhmConfigFlags.ConfigAccess(), *c.rhmRawConfig, true); err != nil {
+		return err
+	}
 
 	return nil
 }

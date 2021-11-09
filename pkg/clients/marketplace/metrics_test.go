@@ -30,7 +30,7 @@ var _ = Describe("marketplace uploaders", func() {
 
 		testBody = []byte("foo")
 
-		config MarketplaceConfig
+		config *MarketplaceConfig
 	)
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ var _ = Describe("marketplace uploaders", func() {
 		caCertPool, _ := x509.SystemCertPool()
 		caCertPool.AddCert(server.HTTPTestServer.Certificate())
 
-		config = MarketplaceConfig{
+		config = &MarketplaceConfig{
 			URL:   server.URL(),
 			Token: "foo",
 			TlsConfig: &tls.Config{

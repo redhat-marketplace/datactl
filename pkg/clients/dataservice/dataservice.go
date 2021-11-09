@@ -13,9 +13,11 @@ import (
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/shared"
 	api "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog"
 )
 
 type DataServiceConfig struct {
@@ -91,9 +93,19 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	req.URL.RawQuery = q.Encode()
 
+	klog.V(5).Info("url is " + req.URL.String())
+
 	resp, err := d.Do(req)
 	if err != nil {
 		logrus.WithError(err).Error("failed to get response")
+		return err
+	}
+
+	err = d.checkResponse(resp)
+	if err != nil {
+		logrus.WithField("statusCode", resp.StatusCode).
+			WithError(err).
+			Error("failed response")
 		return err
 	}
 
@@ -106,7 +118,7 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	listResponse := &clientcmdapi.ListFilesResponse{}
 
-	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: ""}, listResponse)
+	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: latest.Version, Group: latest.Group, Kind: "ListFilesResponse"}, listResponse)
 	if err != nil {
 		logrus.WithError(err).Error("failed to decode response")
 		return err
@@ -277,7 +289,7 @@ func (u *reqBuilder) GetFileByName(ctx context.Context, name, source, sourceType
 }
 
 func (u *reqBuilder) DownloadFile(ctx context.Context, id string) (*http.Request, error) {
-	url := fmt.Sprintf("%s/v1/files/%s/download", u.URL, id)
+	url := fmt.Sprintf("%s/v1/file/%s/download", u.URL, id)
 	return http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 }
 

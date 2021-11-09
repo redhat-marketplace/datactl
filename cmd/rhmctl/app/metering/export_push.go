@@ -1,7 +1,6 @@
 package metering
 
 import (
-	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -16,7 +15,7 @@ func (push *exportPushOptions) Run() error {
 	return nil
 }
 
-func NewCmdExportPush(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdExportPush(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	o := exportCommitOptions{}
 
 	cmd := &cobra.Command{

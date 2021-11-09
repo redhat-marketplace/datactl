@@ -33,15 +33,19 @@ type ConfigFlags struct {
 	dataServiceClientLock sync.Mutex
 }
 
-func NewConfigFlags() *ConfigFlags {
+func NewConfigFlags(currentContext string) *ConfigFlags {
 	return &ConfigFlags{
-		overrides:         &ConfigOverrides{},
+		overrides:         &ConfigOverrides{CurrentContext: currentContext},
 		RHMCTLConfig:      ptr.String(""),
 		MarketplaceHost:   ptr.String(""),
 		MarketplaceToken:  ptr.String(""),
 		DataServiceCAFile: ptr.String(""),
 		ExportFileName:    ptr.String(""),
 	}
+}
+
+func (f *ConfigFlags) ConfigAccess() ConfigAccess {
+	return f.config.ConfigAccess()
 }
 
 func (f *ConfigFlags) RawPersistentConfigLoader() ClientConfig {

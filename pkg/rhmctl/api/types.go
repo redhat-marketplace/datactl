@@ -6,8 +6,6 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 type Config struct {
 	MarketplaceEndpoint Marketplace `json:"marketplace"`
 
-	CurrentMeteringExport *MeteringExport `json:"metering-export,omitempty"`
-
 	MeteringExports map[string]*MeteringExport `json:"metering-export-history,omitempty"`
 
 	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints"`
@@ -30,10 +28,6 @@ type MeteringExport struct {
 }
 
 type MeteringFileSummary struct {
-	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
-	// +k8s:conversion-gen=false
-	LocationOfOrigin string
-
 	DataServiceContext string `json:"data-service-context"`
 
 	// +optional
@@ -90,6 +84,12 @@ type DataServiceEndpoint struct {
 
 	URL string `json:"url"`
 
+	// Token is a filepath to a token file
+	Token string `json:"token,omitempty"`
+
+	// TokenData is base64 encoded token in the config file, env var, or token argument
+	TokenData string `json:"token-data,omitempty"`
+
 	ServiceAccount string `json:"service-account,omitempty"`
 
 	// InsecureSkipTLSVerify skips the validity check for the server's certificate. This will make your HTTPS connections insecure.
@@ -119,10 +119,9 @@ type DataServiceEndpoint struct {
 
 func NewConfig() *Config {
 	return &Config{
-		DataServiceEndpoints:  make(map[string]*DataServiceEndpoint),
-		MarketplaceEndpoint:   Marketplace{},
-		CurrentMeteringExport: &MeteringExport{},
-		MeteringExports:       make(map[string]*MeteringExport),
+		DataServiceEndpoints: make(map[string]*DataServiceEndpoint),
+		MarketplaceEndpoint:  Marketplace{},
+		MeteringExports:      make(map[string]*MeteringExport),
 	}
 }
 
@@ -133,5 +132,5 @@ const (
 func NewDefaultConfig() *Config {
 	conf := NewConfig()
 	conf.MarketplaceEndpoint.Host = marketplaceProductionUrl
-	return NewDefaultConfig()
+	return conf
 }

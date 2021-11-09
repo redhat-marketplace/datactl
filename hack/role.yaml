@@ -1,0 +1,67 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: rhm-files
+rules:
+- nonResourceURLs: ["/*"] 
+  verbs: ["get", "delete", "post"]
+- nonResourceURLs: ["/v1/files", "/v1/files/*"] 
+  verbs: ["get"]
+- nonResourceURLs: ["/v1/files/*"] 
+  verbs: ["delete"]
+- nonResourceURLs: ["/v1/files/download"]
+  verbs: ["post"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: rhm-files
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rhm-files
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: krp-curl
+spec:
+  template:
+    metadata:
+      name: krp-curl
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: krp-curl
+        image: quay.io/brancz/krp-curl:v0.0.2
+        command:
+        - /bin/sh
+        - -c
+        - cat /service-account/token
+        volumeMounts:
+        - name: token-vol
+          mountPath: "/service-account"
+          readOnly: true
+      - name: krp-curl-2
+        image: quay.io/brancz/krp-curl:v0.0.2
+        command:
+        - /bin/sh
+        - -c
+        - 'curl -v -s -k -H "Authorization: Bearer `cat /service-account/token`" https://rhm-data-service.openshift-redhat-marketplace.svc:8008/v1/files'
+        volumeMounts:
+        - name: token-vol
+          mountPath: "/service-account"
+          readOnly: true
+      volumes:
+      - name: token-vol
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: rhm-data-service.openshift-redhat-marketplace.svc
+              expirationSeconds: 3600
+              path: token
+  backoffLimit: 4

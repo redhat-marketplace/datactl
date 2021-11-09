@@ -133,7 +133,6 @@ func autoConvert_api_Config_To_v1_Config(in *api.Config, out *Config, s conversi
 	if err := Convert_api_Marketplace_To_v1_Marketplace(&in.MarketplaceEndpoint, &out.MarketplaceEndpoint, s); err != nil {
 		return err
 	}
-	// WARNING: in.CurrentMeteringExport requires manual conversion: does not exist in peer-type
 	// WARNING: in.MeteringExports requires manual conversion: inconvertible types (map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.MeteringExport vs []*./v1.MeteringExport)
 	// WARNING: in.DataServiceEndpoints requires manual conversion: inconvertible types (map[string]*github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api.DataServiceEndpoint vs []*./v1.DataServiceEndpoint)
 	return nil
@@ -143,6 +142,8 @@ func autoConvert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(in *DataServi
 	out.ClusterContextName = in.ClusterContextName
 	out.URL = in.URL
 	out.ServiceAccount = in.ServiceAccount
+	out.Token = in.Token
+	out.TokenData = in.TokenData
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
 	out.CertificateAuthorityData = *(*[]byte)(unsafe.Pointer(&in.CertificateAuthorityData))
@@ -156,8 +157,11 @@ func Convert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(in *DataServiceEn
 }
 
 func autoConvert_api_DataServiceEndpoint_To_v1_DataServiceEndpoint(in *api.DataServiceEndpoint, out *DataServiceEndpoint, s conversion.Scope) error {
+	// INFO: in.LocationOfOrigin opted out of conversion generation
 	out.ClusterContextName = in.ClusterContextName
 	out.URL = in.URL
+	out.Token = in.Token
+	out.TokenData = in.TokenData
 	out.ServiceAccount = in.ServiceAccount
 	out.InsecureSkipTLSVerify = in.InsecureSkipTLSVerify
 	out.CertificateAuthority = in.CertificateAuthority
@@ -272,6 +276,7 @@ func Convert_v1_Marketplace_To_api_Marketplace(in *Marketplace, out *api.Marketp
 }
 
 func autoConvert_api_Marketplace_To_v1_Marketplace(in *api.Marketplace, out *Marketplace, s conversion.Scope) error {
+	// INFO: in.LocationOfOrigin opted out of conversion generation
 	out.Host = in.Host
 	out.PullSecret = in.PullSecret
 	out.PullSecretData = in.PullSecretData
@@ -302,6 +307,7 @@ func Convert_v1_MeteringExport_To_api_MeteringExport(in *MeteringExport, out *ap
 }
 
 func autoConvert_api_MeteringExport_To_v1_MeteringExport(in *api.MeteringExport, out *MeteringExport, s conversion.Scope) error {
+	// INFO: in.LocationOfOrigin opted out of conversion generation
 	out.FileName = in.FileName
 	out.Active = in.Active
 	out.Start = in.Start

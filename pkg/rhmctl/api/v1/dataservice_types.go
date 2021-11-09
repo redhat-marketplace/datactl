@@ -6,6 +6,7 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type FileInfo struct {
+
 	// +optional
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// +optional
@@ -32,6 +33,7 @@ type FileInfo struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ListFilesResponse struct {
+
 	// The field name should match the noun "files" in the method name.  There
 	// will be a maximum number of items returned based on the page_size field
 	// in the request.

@@ -1,19 +1,19 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
+	"emperror.dev/errors"
 	"github.com/imdario/mergo"
 	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
@@ -22,6 +22,7 @@ import (
 type ClientConfigLoader interface {
 	// Load returns the latest config
 	Load() (*clientcmdapi.Config, error)
+	ConfigAccess
 }
 
 func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
@@ -34,18 +35,20 @@ func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
 		// prevent the same path load multiple times
 		chain = append(chain, fileList...)
 		warnIfAllMissing = true
-
 	} else {
 		chain = append(chain, RecommendedHomeFile)
 	}
 
+	chain = deduplicate(chain)
+
 	return &ClientConfigLoadingRules{
-		Precedence:       deduplicate(chain),
+		Precedence:       chain,
 		WarnIfAllMissing: warnIfAllMissing,
 	}
 }
 
 type ClientConfigLoadingRules struct {
+	ExplicitFile string
 	ExplicitPath string
 	Precedence   []string
 
@@ -138,13 +141,13 @@ func (rules *ClientConfigLoadingRules) GetStartingConfig() (*clientcmdapi.Config
 	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{})
 	rawConfig, err := clientConfig.RawConfig()
 	if os.IsNotExist(err) {
-		return clientcmdapi.NewConfig(), nil
+		return clientcmdapi.NewDefaultConfig(), nil
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &rawConfig, nil
+	return rawConfig, nil
 }
 
 // GetDefaultFilename implements ConfigAccess
@@ -189,12 +192,19 @@ func LoadFromFile(filename string) (*clientcmdapi.Config, error) {
 
 	klog.V(6).Infoln("Config loaded from file: ", filename)
 
+	config := clientcmdapi.NewConfig()
+	// if there's no data in a file, return the default object instead of failing (DecodeInto reject empty input)
+	if len(data) == 0 {
+		return config, nil
+	}
+
 	decoded, _, err := clientcmdlatest.Codec.Decode(data, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: "Config"}, config)
 	if err != nil {
+		err = errors.Wrap(err, "failed to decode config")
 		return nil, err
 	}
 
-	config := decoded.(*clientcmdapi.Config)
+	config = decoded.(*clientcmdapi.Config)
 
 	for k, v := range config.DataServiceEndpoints {
 		v.LocationOfOrigin = filename
@@ -208,10 +218,6 @@ func LoadFromFile(filename string) (*clientcmdapi.Config, error) {
 
 	config.MarketplaceEndpoint.LocationOfOrigin = filename
 
-	if config.CurrentMeteringExport != nil {
-		config.CurrentMeteringExport.LocationOfOrigin = filename
-	}
-
 	if config.DataServiceEndpoints == nil {
 		config.DataServiceEndpoints = make(map[string]*clientcmdapi.DataServiceEndpoint)
 	}
@@ -224,14 +230,18 @@ func LoadFromFile(filename string) (*clientcmdapi.Config, error) {
 }
 
 func deduplicate(in []string) []string {
-	out := make([]string, len(in))
+	out := []string{}
 	seen := make(map[string]interface{})
 
 	for _, str := range in {
+		if len(str) == 0 {
+			continue
+		}
 		if _, ok := seen[str]; ok {
 			continue
 		}
-		seen[str] = str
+
+		seen[str] = nil
 		out = append(out, str)
 	}
 
@@ -253,7 +263,7 @@ func WriteToFile(config rhmctlapi.Config, filename string) error {
 	}
 
 	if err := ioutil.WriteFile(filename, content, 0600); err != nil {
-		return err
+		return errors.Wrap(err, "writing file: "+filename)
 	}
 	return nil
 }
@@ -261,5 +271,7 @@ func WriteToFile(config rhmctlapi.Config, filename string) error {
 // Write serializes the config to yaml.
 // Encapsulates serialization without assuming the destination is a file.
 func Write(config rhmctlapi.Config) ([]byte, error) {
-	return runtime.Encode(latest.Codec, &config)
+	b := &bytes.Buffer{}
+	err := latest.Codec.Encode(&config, b)
+	return b.Bytes(), err
 }

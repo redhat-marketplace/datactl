@@ -32,18 +32,27 @@ const (
 	FlagTimeout         = "request-timeout"
 )
 
+func flagInfo(longName, shortName, defaultVal, description string) clientcmd.FlagInfo {
+	return clientcmd.FlagInfo{
+		LongName:    longName,
+		ShortName:   shortName,
+		Default:     defaultVal,
+		Description: description,
+	}
+}
+
 func RecommendedConfigOverrideFlags(prefix string) ConfigOverrideFlags {
 	return ConfigOverrideFlags{
 		Marketplace: RecommendMarketplaceOverrideFlags(prefix),
 
-		CurrentContext: clientcmd.FlagInfo{prefix + FlagContext, "", "", "The name of the kubeconfig context to use"},
-		Timeout:        clientcmd.FlagInfo{prefix + FlagTimeout, "", "0", "The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests."},
+		CurrentContext: flagInfo(prefix+FlagContext, "", "", "The name of the kubeconfig context to use"),
+		Timeout:        flagInfo(prefix+FlagTimeout, "", "0", "The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests."),
 	}
 }
 
 func RecommendMarketplaceOverrideFlags(prefix string) MarketplaceOverrideFlags {
 	return MarketplaceOverrideFlags{
-		Host: clientcmd.FlagInfo{prefix + FlagMarketplaceHost, "", "", "Override the Marketplace API host"},
+		Host: flagInfo(prefix+FlagMarketplaceHost, "", "", "Override the Marketplace API host"),
 	}
 }
 

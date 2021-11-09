@@ -39,7 +39,7 @@ func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, e
 		currentContext = config.overrides.CurrentContext
 	}
 
-	config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides)
+	config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
 	return config.clientConfig, nil
 
 }
@@ -82,24 +82,33 @@ func (config *DeferredLoadingClientConfig) DataServiceClientConfig() (*dataservi
 }
 
 func (config *DeferredLoadingClientConfig) ConfigAccess() ConfigAccess {
-	return config.loader
+	mergedClientConfig, err := config.createClientConfig()
+	if err != nil {
+		return nil
+	}
+
+	return mergedClientConfig.ConfigAccess()
 }
 
 func NewNonInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overrides *ConfigOverrides) ClientConfig {
-	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides, icc: &inClusterClientConfig{overrides: overrides}}
+	return &DeferredLoadingClientConfig{loader: loader, overrides: overrides}
 }
 
 func NewNonInteractiveClientConfig(config rhmctlapi.Config, contextName string, overrides *ConfigOverrides, configAccess ConfigAccess) ClientConfig {
-	return &DirectClientConfig{config, contextName, overrides, configAccess}
+	return &DirectClientConfig{
+		config:       config,
+		contextName:  contextName,
+		overrides:    overrides,
+		configAccess: configAccess,
+	}
 }
 
 // DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config, options overrides, and an optional fallbackReader for auth information
 type DirectClientConfig struct {
-	config      rhmctlapi.Config
-	contextName string
-	overrides   *ConfigOverrides
-
-	ConfigAccess
+	config       rhmctlapi.Config
+	contextName  string
+	overrides    *ConfigOverrides
+	configAccess ConfigAccess
 }
 
 func (config *DirectClientConfig) RawConfig() (*rhmctlapi.Config, error) {
@@ -124,4 +133,8 @@ func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataSe
 	}
 
 	return ds, nil
+}
+
+func (config *DirectClientConfig) ConfigAccess() ConfigAccess {
+	return config.configAccess
 }

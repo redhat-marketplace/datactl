@@ -36,6 +36,7 @@ type withHeader struct {
 
 func WithBearerAuth(token string) RoundTripperOptions {
 	if token == "" {
+		// TODO replaces with klog
 		logrus.Warn("bearer token is empty")
 		return func(rt http.RoundTripper) http.RoundTripper {
 			return rt

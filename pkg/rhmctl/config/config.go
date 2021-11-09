@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"emperror.dev/errors"
-	"github.com/gofrs/flock"
 	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"k8s.io/client-go/util/homedir"
@@ -39,6 +38,8 @@ var (
 	RecommendedConfigDir  = filepath.Join(homedir.HomeDir(), RecommendedHomeDir)
 	RecommendedHomeFile   = filepath.Join(RecommendedConfigDir, RecommendedFileName)
 	RecommendedSchemaFile = filepath.Join(RecommendedConfigDir, RecommendedSchemaName)
+
+	RecommendedDataDir = filepath.Join(RecommendedConfigDir, "data")
 )
 
 var (
@@ -57,15 +58,11 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 		// to avoid deadlock (note: this can fail w/ symlinks, but... come on).
 		sort.Strings(possibleSources)
 		for _, filename := range possibleSources {
-			filelock := flock.New(filename)
-			locked, err := filelock.TryLock()
-			if err != nil {
+			if err := lockFile(filename); err != nil {
 				return err
 			}
-			if !locked {
-				return errors.NewWithDetails("failed to lock file", "file", filename, "filelock", filelock.String())
-			}
-			defer filelock.Unlock()
+
+			defer unlockFile(filename)
 		}
 	}
 
@@ -81,32 +78,6 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 		return nil
 	}
 
-	if !reflect.DeepEqual(startingConfig.MarketplaceEndpoint, newConfig.MarketplaceEndpoint) {
-		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
-			if !reflect.DeepEqual(in.MarketplaceEndpoint, newConfig.MarketplaceEndpoint) {
-				in.MarketplaceEndpoint = newConfig.MarketplaceEndpoint
-				return true, nil
-			}
-			return false, nil
-		}); err != nil {
-			return err
-		}
-	}
-
-	if !reflect.DeepEqual(*startingConfig.CurrentMeteringExport, *newConfig.CurrentMeteringExport) {
-		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
-			if !reflect.DeepEqual(*in.CurrentMeteringExport, *newConfig.CurrentMeteringExport) {
-				in.CurrentMeteringExport = newConfig.CurrentMeteringExport
-				return true, nil
-			}
-
-			return false, nil
-		}); err != nil {
-			return err
-		}
-	}
-
-	// Search every cluster, authInfo, and context.  First from new to old for differences, then from old to new for deletions
 	for key, endpoint := range newConfig.DataServiceEndpoints {
 		startingEndpoint, exists := startingConfig.DataServiceEndpoints[key]
 
@@ -226,4 +197,28 @@ func writeConfig(
 	}
 
 	return errors.New("no config found to write preferences")
+}
+
+func lockName(name string) string {
+	return name + ".lock"
+}
+
+func lockFile(filename string) error {
+	dir := filepath.Dir(filename)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+
+	f, err := os.OpenFile(lockName(filename), os.O_CREATE|os.O_EXCL, 0)
+	if err != nil {
+		return errors.Wrap(err, "failed to open lockfile "+lockName(filename))
+	}
+	f.Close()
+	return nil
+}
+
+func unlockFile(filename string) error {
+	return os.Remove(lockName(filename))
 }

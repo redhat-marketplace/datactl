@@ -2,25 +2,32 @@ package metering
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"emperror.dev/errors"
 	"github.com/gotidy/ptr"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/metering"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	clientapi "k8s.io/client-go/tools/clientcmd/api"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 )
 
-func NewCmdExportPull(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+	pathOptions := genericclioptions.NewConfigFlags(false)
 	o := exportPullOptions{
-		configFlags:    genericclioptions.NewConfigFlags(false),
-		rhmConfigFlags: config.NewConfigFlags(),
+		configFlags:    pathOptions,
+		rhmConfigFlags: rhmFlags,
+		PrintFlags:     genericclioptions.NewPrintFlags("export pull").WithTypeSetter(latest.Scheme),
+		IOStreams:      ioStreams,
 	}
 
 	cmd := &cobra.Command{
@@ -36,9 +43,9 @@ func NewCmdExportPull(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams gener
 		},
 	}
 
+	o.PrintFlags.AddFlags(cmd)
+	cmdutil.AddDryRunFlag(cmd)
 	cmd.Flags().BoolVar(&o.includeDeleted, "include-deleted", false, "include deleted files")
-	o.configFlags.AddFlags(cmd.Flags())
-	o.rhmConfigFlags.AddFlags(cmd.Flags())
 
 	return cmd
 }
@@ -46,6 +53,7 @@ func NewCmdExportPull(conf *rhmctlapi.Config, f cmdutil.Factory, ioStreams gener
 type exportPullOptions struct {
 	configFlags    *genericclioptions.ConfigFlags
 	rhmConfigFlags *config.ConfigFlags
+	PrintFlags     *genericclioptions.PrintFlags
 
 	//flags
 	includeDeleted bool
@@ -56,12 +64,18 @@ type exportPullOptions struct {
 
 	rhmRawConfig *rhmctlapi.Config
 	dataService  dataservice.Client
+
+	ToPrinter func(string) (printers.ResourcePrinter, error)
+
+	bundle                *metering.BundleFile
+	currentMeteringExport *rhmctlapi.MeteringExport
+
+	genericclioptions.IOStreams
 }
 
 func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	e.args = args
 
-	e.configFlags.ToDiscoveryClient()
 	var err error
 	e.rawConfig, err = e.configFlags.ToRawKubeConfigLoader().RawConfig()
 	if err != nil {
@@ -78,15 +92,46 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	//cmdutil.PrintFlagsWithDryRunStrategy(o.PrintFlags, o.dryRunStrategy)
+	e.ToPrinter = func(operation string) (printers.ResourcePrinter, error) {
+		e.PrintFlags.NamePrintFlags.Operation = operation
+
+		return e.PrintFlags.ToPrinter()
+	}
+
+	for _, export := range e.rhmRawConfig.MeteringExports {
+		fmt.Println(export)
+		if export.Active {
+			localExport := *export
+			e.currentMeteringExport = &localExport
+		}
+	}
+
+	if e.currentMeteringExport == nil {
+		bundle, err := metering.NewBundleWithDefaultName()
+		if err != nil {
+			return errors.Wrap(err, "creating bundle")
+		}
+
+		e.currentMeteringExport = &rhmctlapi.MeteringExport{
+			FileName: bundle.Name(),
+			Active:   true,
+			Start:    metav1.Timestamp{Seconds: metav1.Now().Unix()},
+		}
+
+		e.rhmRawConfig.MeteringExports[bundle.Name()] = e.currentMeteringExport
+		e.bundle = bundle
+	}
+
 	return nil
 }
 
 func (e *exportPullOptions) Validate() error {
-	if e.rhmRawConfig.CurrentMeteringExport == nil {
-		return errors.New("command requires a current export; run `rhmctl export start`")
+	if e.currentMeteringExport == nil || e.currentMeteringExport.FileName == "" {
+		return errors.New("command requires a current export file")
 	}
 
-	if e.rhmRawConfig.CurrentMeteringExport.FileName == "" {
+	if e.bundle == nil {
 		return errors.New("command requires a current export file")
 	}
 
@@ -96,23 +141,22 @@ func (e *exportPullOptions) Validate() error {
 func (e *exportPullOptions) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-
-	bundle, err := metering.NewBundle(e.rhmRawConfig.CurrentMeteringExport.FileName)
-	if err != nil {
-		return err
-	}
-
-	defer bundle.Close()
+	defer e.bundle.Close()
 
 	response := rhmctlapi.ListFilesResponse{}
 	listOpts := dataservice.ListOptions{
 		IncludeDeleted: e.includeDeleted,
 	}
 
-	exportInfo := &rhmctlapi.MeteringFileSummary{}
+	exportInfo := rhmctlapi.MeteringFileSummary{}
 	exportInfo.DataServiceContext = e.rawConfig.CurrentContext
 	exportInfo.Committed = false
 	exportInfo.Files = make([]*rhmctlapi.FileInfo, 0)
+
+	// print, err := e.ToPrinter("download")
+	// if err != nil {
+	// 	return err
+	// }
 
 	for {
 		err := e.dataService.ListFiles(ctx, listOpts, &response)
@@ -121,12 +165,10 @@ func (e *exportPullOptions) Run() error {
 			return err
 		}
 
-		if response.NextPageToken == "" {
-			break
-		}
+		fmt.Printf("%+v", response.Files)
 
 		for _, file := range response.Files {
-			w, err := bundle.NewFile(file.Name, int64(file.Size))
+			w, err := e.bundle.NewFile(file.Name, int64(file.Size))
 			if err != nil {
 				return err
 			}
@@ -137,18 +179,28 @@ func (e *exportPullOptions) Run() error {
 			if err != nil {
 				return err
 			}
+
+			//print.PrintObj(file, e.Out)
+		}
+
+		if response.NextPageToken == "" {
+			break
 		}
 
 		listOpts.PageSize = ptr.Int(int(response.PageSize))
 		listOpts.PageToken = response.NextPageToken
 	}
 
-	err = bundle.Close()
+	err := e.bundle.Close()
 	if err != nil {
 		return err
 	}
 
-	// TODO: save the config file
+	fmt.Println(e.bundle.Name())
+
+	if err := config.ModifyConfig(e.rhmConfigFlags.RawPersistentConfigLoader().ConfigAccess(), *e.rhmRawConfig, true); err != nil {
+		return err
+	}
 	// TODO: save the metering export data
 
 	return nil
