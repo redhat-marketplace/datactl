@@ -62,15 +62,21 @@ builds:
 archives:
   - id: openshift-build
     builds:
-      - amd64-oses
-      - arches-linux
-    name_template: 'oc_{{ .Binary }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}'
+      - darwin-amd64
+      - linux-amd64
+      - linux-arm64
+      - linux-ppc64le
+      - linux-s390x
+    name_template: 'oc_{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     format: binary
   - id: default
     builds:
-      - amd64-oses
-      - arches-linux
-    name_template: '{{ .Binary }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}'
+      - darwin-amd64
+      - linux-amd64
+      - linux-arm64
+      - linux-ppc64le
+      - linux-s390x
+    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     format: binary
 checksum:
   name_template: 'checksums.txt'
