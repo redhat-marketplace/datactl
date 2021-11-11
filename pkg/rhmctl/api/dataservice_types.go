@@ -22,13 +22,18 @@ type FileInfo struct {
 	// +optional
 	MimeType string `protobuf:"bytes,11,opt,name=mimeType,proto3" json:"mimeType,omitempty"`
 	// +optional
-	CreatedAt *metav1.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt *metav1.Time `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// +optional
-	UpdatedAt *metav1.Timestamp `protobuf:"bytes,16,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedAt *metav1.Time `protobuf:"bytes,16,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// +optional
-	DeletedAt *metav1.Timestamp `protobuf:"bytes,17,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"`
+	DeletedAt *metav1.Time `protobuf:"bytes,17,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"`
 	// +optional
 	Metadata map[string]string `protobuf:"bytes,20,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+
+	// +optional
+	UploadID string `protobuf:"-" json:"uploadID,omitempty"`
+	// +optional
+	UploadError string `protobuf:"-" json:"uploadError,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

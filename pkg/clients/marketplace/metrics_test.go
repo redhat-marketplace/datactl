@@ -37,7 +37,7 @@ var _ = Describe("marketplace uploaders", func() {
 		server = ghttp.NewTLSServer()
 		caCertPool, _ := x509.SystemCertPool()
 		caCertPool.AddCert(server.HTTPTestServer.Certificate())
-
+		server.HTTPTestServer.EnableHTTP2 = true
 		config = &MarketplaceConfig{
 			URL:   server.URL(),
 			Token: "foo",
@@ -62,6 +62,7 @@ var _ = Describe("marketplace uploaders", func() {
 		getResponse2 = MarketplaceUsageResponse{
 			Status: MktplStatusSuccess,
 		}
+
 		testBody = []byte("foo")
 	})
 
@@ -162,8 +163,8 @@ var _ = Describe("marketplace uploaders", func() {
 
 	Describe("uploading files", func() {
 		BeforeEach(func() {
-			config.polling = 1
-			config.timeout = 1
+			config.polling = 1 * time.Second
+			config.timeout = 1 * time.Second
 			sut = NewClient(config)
 			Expect(err).To(Succeed())
 
@@ -251,6 +252,7 @@ var _ = Describe("marketplace uploaders", func() {
 func verifyFileUpload(fileName string, testBody []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		Expect(req.Header.Get("Content-Type")).To(ContainSubstring("multipart/form-data"))
+		Expect(req.Header.Get("Authorization")).To(Equal("Bearer foo"))
 
 		err := req.ParseMultipartForm(32 << 20) // maxMemory 32 MB
 		Expect(err).To(Succeed())

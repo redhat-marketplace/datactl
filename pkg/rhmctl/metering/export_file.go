@@ -13,8 +13,9 @@ import (
 )
 
 type BundleFile struct {
-	file *os.File
-	tar  *tar.Writer
+	file      *os.File
+	tar       *tar.Writer
+	tarReader *tar.Reader
 }
 
 var (
@@ -49,6 +50,8 @@ func (f *BundleFile) open(filepath string) error {
 
 	f.file = file
 	f.tar = tar.NewWriter(file)
+	f.tarReader = tar.NewReader(file)
+
 	return nil
 }
 
@@ -73,6 +76,78 @@ func (f *BundleFile) Close() error {
 	return errors.Combine(f.tar.Close(), f.file.Close())
 }
 
+func (f *BundleFile) Walk(walk func(header *tar.Header, r io.Reader)) error {
+	for {
+		header, err := f.tarReader.Next()
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		walk(header, f.tarReader)
+	}
+	return nil
+}
+
+func (f *BundleFile) Compact() error {
+	headers := map[string]int{}
+	os.Remove(f.Name() + "compact")
+	newBundle, err := NewBundle(f.Name() + "compact")
+	defer newBundle.Close()
+
+	if err != nil {
+		return err
+	}
+
+	var i int
+	err = WalkTar(f.file.Name(), func(header *tar.Header, r io.Reader) error {
+		headers[header.Name] = i
+		i = i + 1
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	headersIntMap := map[int]interface{}{}
+	for _, i := range headers {
+		headersIntMap[i] = nil
+	}
+
+	i = 0
+	err = WalkTar(f.file.Name(), func(header *tar.Header, r io.Reader) error {
+		_, ok := headersIntMap[i]
+		i = i + 1
+
+		if !ok {
+			return nil
+		}
+
+		var w io.Writer
+		w, err = newBundle.NewFile(header.Name, header.Size)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(w, r)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	err = newBundle.Close()
+	if err != nil {
+		return err
+	}
+
+	return os.Rename(newBundle.Name(), f.Name())
+}
+
 func NewBundleWithDefaultName() (*BundleFile, error) {
 	timestamp := time.Now().Format("20060102T150405Z")
 	filename := filepath.Join(config.RecommendedDataDir, fmt.Sprintf("rhm-upload-%s.tar", timestamp))
@@ -85,4 +160,36 @@ func NewBundleWithDefaultName() (*BundleFile, error) {
 	}
 
 	return NewBundle(filename)
+}
+
+func WalkTar(filepath string, walk func(header *tar.Header, r io.Reader) error) error {
+	file, err := os.OpenFile(filepath, os.O_RDONLY, fileMode)
+
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	tarReader := tar.NewReader(file)
+
+	for {
+		header, err := tarReader.Next()
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		err = walk(header, tarReader)
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

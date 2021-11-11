@@ -28,15 +28,13 @@ func NewCmdExport(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams gen
 
 	cmd.AddCommand(NewCmdExportPull(rhmFlags, f, ioStreams))
 	cmd.AddCommand(NewCmdExportCommit(rhmFlags, f, ioStreams))
-	cmd.AddCommand(NewCmdExportPush(f, ioStreams))
+	cmd.AddCommand(NewCmdExportPush(rhmFlags, f, ioStreams))
 
 	return cmd
 }
 
 // Idea is we have 1 active export
 // 	- Tracked by a file, name can be given, default one is uniquely generated.
-// export start - sets a file as the active export and downloads to it.
-//              - will error if there is already an active export
 // export pull - pulls all the files to the active export
 //              - will fail if there is not an active export
 // export commit - marks the files on the server as deleted

@@ -33,6 +33,13 @@ type Client interface {
 }
 
 func NewClient(config *MarketplaceConfig) Client {
+	if config.polling == 0 {
+		config.polling = 5 * time.Second
+	}
+	if config.timeout == 0 {
+		config.timeout = 60 * time.Second
+	}
+
 	cli := &marketplaceClient{
 		Client: shared.NewHttpClient(
 			config.TlsConfig,

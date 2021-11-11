@@ -12,12 +12,12 @@ type Config struct {
 }
 
 type MeteringExport struct {
-	FileName string           `json:"name"`
-	Active   bool             `json:"active"`
-	Start    metav1.Timestamp `json:"start"`
+	FileName string      `json:"name"`
+	Active   bool        `json:"active"`
+	Start    metav1.Time `json:"start"`
 
 	// +optional
-	End metav1.Timestamp `json:"end,omitempty"`
+	End metav1.Time `json:"end,omitempty"`
 
 	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
 }
@@ -25,8 +25,11 @@ type MeteringExport struct {
 type MeteringFileSummary struct {
 	DataServiceContext string `json:"data-service-context"`
 	// +optional
-	Files     []*FileInfo `json:"files,omitempty"`
-	Committed bool        `json:"committed"`
+	Files []*FileInfo `json:"files,omitempty"`
+	// +optional
+	Committed bool `json:"committed,omitempty"`
+	// +optional
+	Pushed bool `json:"pushed,omitempty"`
 }
 
 type Marketplace struct {

@@ -16,12 +16,12 @@ type MeteringExport struct {
 	// +k8s:conversion-gen=false
 	LocationOfOrigin string
 
-	FileName string           `json:"name"`
-	Active   bool             `json:"active"`
-	Start    metav1.Timestamp `json:"start"`
+	FileName string      `json:"name"`
+	Active   bool        `json:"active"`
+	Start    metav1.Time `json:"start"`
 
 	// +optional
-	End metav1.Timestamp `json:"end,omitempty"`
+	End metav1.Time `json:"end,omitempty"`
 
 	// +optional
 	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
@@ -33,7 +33,9 @@ type MeteringFileSummary struct {
 	// +optional
 	Files []*FileInfo `json:"files,omitempty"`
 
-	Committed bool `json:"committed"`
+	Committed bool `json:"committed,omitempty"`
+
+	Pushed bool `json:"pushed,omitempty"`
 }
 
 type Marketplace struct {
@@ -133,4 +135,10 @@ func NewDefaultConfig() *Config {
 	conf := NewConfig()
 	conf.MarketplaceEndpoint.Host = marketplaceProductionUrl
 	return conf
+}
+
+func NewDefaultMeteringExport() *MeteringExport {
+	export := MeteringExport{}
+	export.Start = metav1.Now()
+	return &export
 }

@@ -183,10 +183,12 @@ func autoConvert_v1_FileInfo_To_api_FileInfo(in *FileInfo, out *api.FileInfo, s 
 	out.SourceType = in.SourceType
 	out.Checksum = in.Checksum
 	out.MimeType = in.MimeType
-	out.CreatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.CreatedAt))
-	out.UpdatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.UpdatedAt))
-	out.DeletedAt = (*metav1.Timestamp)(unsafe.Pointer(in.DeletedAt))
+	out.CreatedAt = (*metav1.Time)(unsafe.Pointer(in.CreatedAt))
+	out.UpdatedAt = (*metav1.Time)(unsafe.Pointer(in.UpdatedAt))
+	out.DeletedAt = (*metav1.Time)(unsafe.Pointer(in.DeletedAt))
 	out.Metadata = *(*map[string]string)(unsafe.Pointer(&in.Metadata))
+	out.UploadID = in.UploadID
+	out.UploadError = in.UploadError
 	return nil
 }
 
@@ -203,10 +205,12 @@ func autoConvert_api_FileInfo_To_v1_FileInfo(in *api.FileInfo, out *FileInfo, s 
 	out.SourceType = in.SourceType
 	out.Checksum = in.Checksum
 	out.MimeType = in.MimeType
-	out.CreatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.CreatedAt))
-	out.UpdatedAt = (*metav1.Timestamp)(unsafe.Pointer(in.UpdatedAt))
-	out.DeletedAt = (*metav1.Timestamp)(unsafe.Pointer(in.DeletedAt))
+	out.CreatedAt = (*metav1.Time)(unsafe.Pointer(in.CreatedAt))
+	out.UpdatedAt = (*metav1.Time)(unsafe.Pointer(in.UpdatedAt))
+	out.DeletedAt = (*metav1.Time)(unsafe.Pointer(in.DeletedAt))
 	out.Metadata = *(*map[string]string)(unsafe.Pointer(&in.Metadata))
+	out.UploadID = in.UploadID
+	out.UploadError = in.UploadError
 	return nil
 }
 
@@ -325,6 +329,7 @@ func autoConvert_v1_MeteringFileSummary_To_api_MeteringFileSummary(in *MeteringF
 	out.DataServiceContext = in.DataServiceContext
 	out.Files = *(*[]*api.FileInfo)(unsafe.Pointer(&in.Files))
 	out.Committed = in.Committed
+	out.Pushed = in.Pushed
 	return nil
 }
 
@@ -337,6 +342,7 @@ func autoConvert_api_MeteringFileSummary_To_v1_MeteringFileSummary(in *api.Meter
 	out.DataServiceContext = in.DataServiceContext
 	out.Files = *(*[]*FileInfo)(unsafe.Pointer(&in.Files))
 	out.Committed = in.Committed
+	out.Pushed = in.Pushed
 	return nil
 }
 

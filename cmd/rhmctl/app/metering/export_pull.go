@@ -2,7 +2,6 @@ package metering
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"emperror.dev/errors"
@@ -13,7 +12,6 @@ import (
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/metering"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	clientapi "k8s.io/client-go/tools/clientcmd/api"
@@ -44,8 +42,9 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	}
 
 	o.PrintFlags.AddFlags(cmd)
-	cmdutil.AddDryRunFlag(cmd)
-	cmd.Flags().BoolVar(&o.includeDeleted, "include-deleted", false, "include deleted files")
+	cmd.Flags().BoolVar(&o.includeDeleted, "include-deleted", false, i18n.T("include deleted files"))
+	cmd.Flags().StringVar(&o.beforeDate, "before", "", i18n.T("pull files before date"))
+	cmd.Flags().StringVar(&o.afterDate, "after", "", i18n.T("pull files after date"))
 
 	return cmd
 }
@@ -56,7 +55,8 @@ type exportPullOptions struct {
 	PrintFlags     *genericclioptions.PrintFlags
 
 	//flags
-	includeDeleted bool
+	includeDeleted        bool
+	beforeDate, afterDate string
 
 	//internal
 	args      []string
@@ -95,32 +95,12 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	//cmdutil.PrintFlagsWithDryRunStrategy(o.PrintFlags, o.dryRunStrategy)
 	e.ToPrinter = func(operation string) (printers.ResourcePrinter, error) {
 		e.PrintFlags.NamePrintFlags.Operation = operation
-
 		return e.PrintFlags.ToPrinter()
 	}
 
-	for _, export := range e.rhmRawConfig.MeteringExports {
-		fmt.Println(export)
-		if export.Active {
-			localExport := *export
-			e.currentMeteringExport = &localExport
-		}
-	}
-
-	if e.currentMeteringExport == nil {
-		bundle, err := metering.NewBundleWithDefaultName()
-		if err != nil {
-			return errors.Wrap(err, "creating bundle")
-		}
-
-		e.currentMeteringExport = &rhmctlapi.MeteringExport{
-			FileName: bundle.Name(),
-			Active:   true,
-			Start:    metav1.Timestamp{Seconds: metav1.Now().Unix()},
-		}
-
-		e.rhmRawConfig.MeteringExports[bundle.Name()] = e.currentMeteringExport
-		e.bundle = bundle
+	e.currentMeteringExport, e.bundle, err = createOrUpdateBundle(e.rhmRawConfig)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -148,15 +128,19 @@ func (e *exportPullOptions) Run() error {
 		IncludeDeleted: e.includeDeleted,
 	}
 
-	exportInfo := rhmctlapi.MeteringFileSummary{}
-	exportInfo.DataServiceContext = e.rawConfig.CurrentContext
-	exportInfo.Committed = false
-	exportInfo.Files = make([]*rhmctlapi.FileInfo, 0)
+	exportInfo := config.LatestContextMeteringFileSummary(e.currentMeteringExport, e.rawConfig.CurrentContext)
 
-	// print, err := e.ToPrinter("download")
-	// if err != nil {
-	// 	return err
-	// }
+	// TODO: do we care or just reset the flag?
+	//if exportInfo.Committed == true {}
+
+	if exportInfo.Files == nil {
+		exportInfo.Files = make([]*rhmctlapi.FileInfo, 0)
+	}
+
+	print, err := e.ToPrinter("pulled")
+	if err != nil {
+		return err
+	}
 
 	for {
 		err := e.dataService.ListFiles(ctx, listOpts, &response)
@@ -164,8 +148,6 @@ func (e *exportPullOptions) Run() error {
 		if err != nil {
 			return err
 		}
-
-		fmt.Printf("%+v", response.Files)
 
 		for _, file := range response.Files {
 			w, err := e.bundle.NewFile(file.Name, int64(file.Size))
@@ -180,7 +162,7 @@ func (e *exportPullOptions) Run() error {
 				return err
 			}
 
-			//print.PrintObj(file, e.Out)
+			print.PrintObj(file, e.Out)
 		}
 
 		if response.NextPageToken == "" {
@@ -191,17 +173,31 @@ func (e *exportPullOptions) Run() error {
 		listOpts.PageToken = response.NextPageToken
 	}
 
-	err := e.bundle.Close()
+	files := map[string]*rhmctlapi.FileInfo{}
+
+	for _, f := range exportInfo.Files {
+		files[f.Name+f.Source+f.SourceType] = f
+	}
+
+	exportInfo.Files = []*rhmctlapi.FileInfo{}
+
+	for _, f := range files {
+		exportInfo.Files = append(exportInfo.Files, f)
+	}
+
+	err = e.bundle.Close()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(e.bundle.Name())
+	err = e.bundle.Compact()
+	if err != nil {
+		return err
+	}
 
 	if err := config.ModifyConfig(e.rhmConfigFlags.RawPersistentConfigLoader().ConfigAccess(), *e.rhmRawConfig, true); err != nil {
 		return err
 	}
-	// TODO: save the metering export data
 
 	return nil
 }

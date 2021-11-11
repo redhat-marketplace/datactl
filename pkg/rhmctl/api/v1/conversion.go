@@ -17,10 +17,6 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 	for _, aD := range a.DataServiceEndpoints {
 		bD := &api.DataServiceEndpoint{}
 
-		if aD == nil {
-			continue
-		}
-
 		err := autoConvert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(aD, bD, scope)
 		if err != nil {
 			return err
@@ -32,10 +28,6 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 
 	for _, aD := range a.MeteringExports {
 		bD := &api.MeteringExport{}
-
-		if aD == nil {
-			continue
-		}
 
 		err := autoConvert_v1_MeteringExport_To_api_MeteringExport(aD, bD, scope)
 		if err != nil {
@@ -55,14 +47,10 @@ func Convert_api_Config_To_v1_Config(a *api.Config, b *Config, scope conversion.
 		return err
 	}
 
-	b.DataServiceEndpoints = make([]*DataServiceEndpoint, len(a.DataServiceEndpoints))
+	b.DataServiceEndpoints = make([]*DataServiceEndpoint, 0, len(a.DataServiceEndpoints))
 
 	for _, aD := range a.DataServiceEndpoints {
 		bD := &DataServiceEndpoint{}
-
-		if aD == nil {
-			continue
-		}
 
 		err := autoConvert_api_DataServiceEndpoint_To_v1_DataServiceEndpoint(aD, bD, scope)
 		if err != nil {
@@ -71,14 +59,10 @@ func Convert_api_Config_To_v1_Config(a *api.Config, b *Config, scope conversion.
 		b.DataServiceEndpoints = append(b.DataServiceEndpoints, bD)
 	}
 
-	b.MeteringExports = make([]*MeteringExport, len(a.MeteringExports))
+	b.MeteringExports = make([]*MeteringExport, 0, len(a.MeteringExports))
 
 	for _, aD := range a.MeteringExports {
 		bD := &MeteringExport{}
-
-		if aD == nil {
-			continue
-		}
 
 		err := autoConvert_api_MeteringExport_To_v1_MeteringExport(aD, bD, scope)
 		if err != nil {

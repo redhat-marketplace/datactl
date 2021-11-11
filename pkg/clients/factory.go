@@ -84,5 +84,37 @@ func ProvideDataService(
 func ProvideMarketplaceUpload(
 	rhmRawConfig *rhmctlapi.Config,
 ) (*marketplace.MarketplaceConfig, error) {
-	return nil, nil
+	mktplConfig := rhmRawConfig.MarketplaceEndpoint
+
+	var token string
+
+	if mktplConfig.PullSecret != "" {
+		data, err := ioutil.ReadFile(mktplConfig.PullSecret)
+		if err != nil {
+			return nil, err
+		}
+		token = string(data)
+	}
+
+	if mktplConfig.PullSecretData != "" {
+		data, err := base64.StdEncoding.DecodeString(mktplConfig.PullSecretData)
+		if err != nil {
+			token = mktplConfig.PullSecretData
+		} else {
+			token = string(data)
+		}
+	}
+
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	return &marketplace.MarketplaceConfig{
+		URL:   rhmRawConfig.MarketplaceEndpoint.Host,
+		Token: token,
+		TlsConfig: &tls.Config{
+			RootCAs: rootCAs,
+		},
+	}, nil
 }

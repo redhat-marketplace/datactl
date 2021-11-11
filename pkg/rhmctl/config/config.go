@@ -86,6 +86,10 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 			destinationFile = configAccess.GetDefaultFilename()
 		}
 
+		if startingEndpoint == nil {
+			startingEndpoint = &rhmctlapi.DataServiceEndpoint{}
+		}
+
 		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
 			if !reflect.DeepEqual(in, startingEndpoint) || !exists {
 				t := *endpoint
@@ -115,23 +119,28 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 			destinationFile = configAccess.GetDefaultFilename()
 		}
 
-		if err := writeConfig(configAccess, func(in *rhmctlapi.Config) (bool, error) {
-			if !reflect.DeepEqual(in, startingExport) || !exists {
-				t := *export
-				in.MeteringExports[key] = &t
-				in.MeteringExports[key].LocationOfOrigin = destinationFile
+		if startingExport == nil {
+			startingExport = &rhmctlapi.MeteringExport{}
+		}
 
-				// if relativizePaths {
-				// 	if err := RelativizeEndpointLocalPaths(in.DataServiceEndpoints[key]); err != nil {
-				// 		return false, err
-				// 	}
-				// }
+		if err := writeConfig(configAccess,
+			func(in *rhmctlapi.Config) (bool, error) {
+				if !reflect.DeepEqual(in, startingExport) || !exists {
+					t := *export
+					in.MeteringExports[key] = &t
+					in.MeteringExports[key].LocationOfOrigin = destinationFile
 
-				return true, nil
-			}
+					// if relativizePaths {
+					// 	if err := RelativizeEndpointLocalPaths(in.DataServiceEndpoints[key]); err != nil {
+					// 		return false, err
+					// 	}
+					// }
 
-			return false, nil
-		}); err != nil {
+					return true, nil
+				}
+
+				return false, nil
+			}); err != nil {
 			return err
 		}
 	}
