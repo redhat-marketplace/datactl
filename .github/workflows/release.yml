@@ -1,9 +1,8 @@
-name: Run Releaser
-
+name: release
 on:
   push:
-    branches:
-      - goreleaser
+    tags:
+      - '*'
 jobs:
   release:
     runs-on: ubuntu-latest
