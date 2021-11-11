@@ -21,7 +21,9 @@ jobs:
         run: go build -v ./...
 
       - name: Ginkgo
-        run: go install github.com/onsi/ginkgo/ginkgo
+        run: |
+          go get github.com/onsi/ginkgo/ginkgo
+          go get github.com/onsi/gomega/...
 
       - name: Test
         run: ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress

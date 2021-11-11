@@ -5,27 +5,27 @@ env:
   - CGO_ENABLED=0
 builds:
   - id: windows-amd64
-    main: ./cmd/rhmctl 
+    main: ./cmd/rhmctl
     goos:
       - windows
     goarch:
       - amd64
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Tag}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Tag}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
   - id: linux-amd64
-    main: ./cmd/rhmctl 
+    main: ./cmd/rhmctl
     goos:
       - linux
     goarch:
       - amd64
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Tag}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Tag}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
   - id: linux-arm64
     main: ./cmd/rhmctl
     goos:
@@ -34,9 +34,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
   - id: linux-s390x
     main: ./cmd/rhmctl
     goos:
@@ -45,9 +45,9 @@ builds:
       - s390x
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
   - id: linux-ppc64le
     main: ./cmd/rhmctl
     goos:
@@ -56,9 +56,9 @@ builds:
       - ppc64le
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
   - id: darwin-amd64
     main: ./cmd/rhmctl
     goos:
@@ -67,9 +67,9 @@ builds:
       - amd64
     ldflags:
       - -s -w
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
-      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
+      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
 archives:
   - id: openshift-build
     builds:
@@ -79,7 +79,7 @@ archives:
       - linux-arm64
       - linux-ppc64le
       - linux-s390x
-    name_template: 'oc_{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    name_template: 'oc-{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     format: binary
   - id: default
     builds:
@@ -102,6 +102,3 @@ changelog:
       - '^chore:'
       - '^docs:'
       - '^test:'
-
-
-
