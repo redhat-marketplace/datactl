@@ -1,0 +1,107 @@
+before:
+  hooks:
+    - go mod tidy
+env:
+  - CGO_ENABLED=0
+builds:
+  - id: windows-amd64
+    main: ./cmd/rhmctl 
+    goos:
+      - windows
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Tag}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+  - id: linux-amd64
+    main: ./cmd/rhmctl 
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Tag}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+  - id: linux-arm64
+    main: ./cmd/rhmctl
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+  - id: linux-s390x
+    main: ./cmd/rhmctl
+    goos:
+      - linux
+    goarch:
+      - s390x
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+  - id: linux-ppc64le
+    main: ./cmd/rhmctl
+    goos:
+      - linux
+    goarch:
+      - ppc64le
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+  - id: darwin-amd64
+    main: ./cmd/rhmctl
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Version={{.Version}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Commit={{.Commit}}"
+      - -X "github.com/operator-framework/operator-manifest-tools/cmd.Date={{.Date}}"
+archives:
+  - id: openshift-build
+    builds:
+      - windows-amd64
+      - darwin-amd64
+      - linux-amd64
+      - linux-arm64
+      - linux-ppc64le
+      - linux-s390x
+    name_template: 'oc_{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
+  - id: default
+    builds:
+      - windows-amd64
+      - darwin-amd64
+      - linux-amd64
+      - linux-arm64
+      - linux-ppc64le
+      - linux-s390x
+    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: '{{ incpatch .Tag }}-next'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^chore:'
+      - '^docs:'
+      - '^test:'
+
+
+
