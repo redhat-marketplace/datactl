@@ -41,7 +41,7 @@ const (
 	MktplStatusInProgress MktplStatus = "inProgress"
 	MktplStatusFailed     MktplStatus = "failed"
 
-	marketplaceMetricsPath   = "%s/usage/api/v2/metrics"
+	marketplaceMetricsPath   = "%s/metering/api/v2/metrics"
 	marketplaceMetricsStatus = marketplaceMetricsPath + "/%s"
 )
 
