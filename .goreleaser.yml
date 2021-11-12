@@ -4,93 +4,36 @@ before:
 env:
   - CGO_ENABLED=0
 builds:
-  - id: windows-amd64
+  - id: rhmctl
     main: ./cmd/rhmctl
-    goos:
-      - windows
-    goarch:
-      - amd64
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Tag}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
-  - id: linux-amd64
+    binary: rhmctl
+    targets:
+      - linux_amd64
+      - linux_s390x
+      - linux_arm64
+      - linux_ppc64le
+      - darwin_amd64
+      - darwin_arm64
+      - windows_amd64
+  - id: oc-rhmctl
     main: ./cmd/rhmctl
-    goos:
-      - linux
-    goarch:
-      - amd64
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Tag}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
-  - id: linux-arm64
-    main: ./cmd/rhmctl
-    goos:
-      - linux
-    goarch:
-      - arm64
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
-  - id: linux-s390x
-    main: ./cmd/rhmctl
-    goos:
-      - linux
-    goarch:
-      - s390x
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
-  - id: linux-ppc64le
-    main: ./cmd/rhmctl
-    goos:
-      - linux
-    goarch:
-      - ppc64le
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
-  - id: darwin-amd64
-    main: ./cmd/rhmctl
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    ldflags:
-      - -s -w
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Version={{.Version}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Commit={{.Commit}}"
-      - -X "github.com/redhat-marketplace/rhmctl/cmd.Date={{.Date}}"
+    binary: oc-rhmctl
+    targets:
+      - linux_amd64
+      - linux_s390x
+      - linux_arm64
+      - linux_ppc64le
+      - darwin_amd64
+      - darwin_arm64
+      - windows_amd64
 archives:
-  - id: openshift-build
+  - id: tar
     builds:
-      - windows-amd64
-      - darwin-amd64
-      - linux-amd64
-      - linux-arm64
-      - linux-ppc64le
-      - linux-s390x
-    name_template: 'oc-{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+      - rhmctl
+      - oc-rhmctl
     format: binary
-  - id: default
-    builds:
-      - windows-amd64
-      - darwin-amd64
-      - linux-amd64
-      - linux-arm64
-      - linux-ppc64le
-      - linux-s390x
-    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-    format: binary
+    files:
+      - hack/token-job.yaml
 checksum:
   name_template: 'checksums.txt'
 snapshot:

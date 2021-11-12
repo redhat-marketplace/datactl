@@ -1,0 +1,67 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rhm-files
+rules:
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+  - nonResourceURLs: ['/v1/files', '/v1/files/*']
+    verbs: ['get']
+  - nonResourceURLs: ['/v1/files/*']
+    verbs: ['delete', 'update']
+  - nonResourceURLs: ['/v1/file/*']
+    verbs: ['create']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rhm-files
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rhm-files
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: openshift-redhat-marketplace
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhm-token-job
+spec:
+  template:
+    metadata:
+      name: rhm-token-job
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: token
+          image: quay.io/brancz/krp-curl:v0.0.2
+          command:
+            - /bin/sh
+            - -c
+            - cat /service-account/token
+          volumeMounts:
+            - name: token-vol
+              mountPath: '/service-account'
+              readOnly: true
+      volumes:
+        - name: token-vol
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: rhm-data-service.openshift-redhat-marketplace.svc
+                  expirationSeconds: 3600
+                  path: token
+  backoffLimit: 4

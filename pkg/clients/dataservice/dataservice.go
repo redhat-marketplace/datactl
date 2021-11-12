@@ -93,7 +93,7 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	req.URL.RawQuery = q.Encode()
 
-	klog.V(5).Info("url is " + req.URL.String())
+	klog.Info("url is "+req.URL.String(), " ", req.URL.RawQuery)
 
 	resp, err := d.Do(req)
 	if err != nil {
@@ -101,7 +101,7 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 		return err
 	}
 
-	err = d.checkResponse(resp)
+	err = d.checkResponse("ListFiles", resp)
 	if err != nil {
 		logrus.WithField("statusCode", resp.StatusCode).
 			WithError(err).
@@ -162,7 +162,7 @@ func (d *dataServiceClient) DownloadFile(ctx context.Context, id string, w io.Wr
 		return "", err
 	}
 
-	err = d.checkResponse(resp)
+	err = d.checkResponse("DownloadFile", resp)
 	if err != nil {
 		log.WithField("statusCode", resp.StatusCode).
 			WithError(err).
@@ -214,7 +214,7 @@ func (d *dataServiceClient) getFile(req *http.Request, finfo *api.FileInfo) (err
 		logrus.WithError(err).Error("failed to read body")
 	}
 
-	err = d.checkResponse(resp)
+	err = d.checkResponse("getFile", resp)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (d *dataServiceClient) DeleteFile(ctx context.Context, id string) error {
 		log.WithError(err).Error("failed to get request")
 		return err
 	}
-	err = d.checkResponse(resp)
+	err = d.checkResponse("DeleteFile", resp)
 	if err != nil {
 		log.WithField("statusCode", resp.StatusCode).
 			WithError(err).
@@ -256,10 +256,11 @@ func (d *dataServiceClient) DeleteFile(ctx context.Context, id string) error {
 	return nil
 }
 
-func (d *dataServiceClient) checkResponse(resp *http.Response) error {
+func (d *dataServiceClient) checkResponse(function string, resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		logrus.WithFields(logrus.Fields{
+			"function":   function,
 			"statusCode": resp.StatusCode,
 			"body":       string(body),
 		}).Error("failed response")

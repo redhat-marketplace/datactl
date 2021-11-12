@@ -29,7 +29,11 @@ func ProvideDataService(
 		if dsConfig.InsecureSkipTLSVerify {
 			tlsConfig.InsecureSkipVerify = true
 		} else {
-			tlsConfig.RootCAs = x509.NewCertPool()
+			rootCAs, _ := x509.SystemCertPool()
+			if rootCAs == nil {
+				rootCAs = x509.NewCertPool()
+			}
+			tlsConfig.RootCAs = rootCAs
 
 			if dsConfig.CertificateAuthority != "" {
 				data, err := ioutil.ReadFile(dsConfig.CertificateAuthority)
@@ -69,10 +73,13 @@ func ProvideDataService(
 	if dsConfig.TokenData != "" {
 		data, err := base64.StdEncoding.DecodeString(dsConfig.TokenData)
 		if err != nil {
-			return nil, err
+			token = dsConfig.TokenData
+		} else {
+			token = string(data)
 		}
-		token = string(data)
 	}
+
+	token = strings.TrimSpace(token)
 
 	return &dataservice.DataServiceConfig{
 		URL:       dsConfig.URL,
@@ -104,6 +111,8 @@ func ProvideMarketplaceUpload(
 			token = string(data)
 		}
 	}
+
+	token = strings.TrimSpace(token)
 
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
