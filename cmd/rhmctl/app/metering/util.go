@@ -4,22 +4,17 @@ import (
 	"emperror.dev/errors"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/metering"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func createOrUpdateBundle(
+	activeContext string,
 	rhmRawConfig *rhmctlapi.Config,
 ) (*rhmctlapi.MeteringExport, *metering.BundleFile, error) {
 	var currentMeteringExport *rhmctlapi.MeteringExport
 
-	for _, export := range rhmRawConfig.MeteringExports {
-		if export.Active {
-			localExport := export
-			currentMeteringExport = localExport
-		}
-	}
+	currentMeteringExport, ok := rhmRawConfig.MeteringExports[activeContext]
 
-	if currentMeteringExport == nil {
+	if !ok {
 		bundle, err := metering.NewBundleWithDefaultName()
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "creating bundle")
@@ -28,12 +23,17 @@ func createOrUpdateBundle(
 		currentMeteringExport = &rhmctlapi.MeteringExport{
 			FileName: bundle.Name(),
 			Active:   true,
-			Start:    metav1.Now(),
+			Start:    nil,
 		}
 
-		rhmRawConfig.MeteringExports[bundle.Name()] = currentMeteringExport
+		rhmRawConfig.MeteringExports[activeContext] = currentMeteringExport
 		return rhmRawConfig.MeteringExports[bundle.Name()], bundle, err
 	}
+
+	// setting unused fields to nil
+	currentMeteringExport.Start = nil
+	currentMeteringExport.End = nil
+	//
 
 	bundle, err := metering.NewBundle(currentMeteringExport.FileName)
 	return currentMeteringExport, bundle, err

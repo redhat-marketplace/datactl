@@ -2,6 +2,7 @@ package latest
 
 import (
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	dataservicev1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/dataservice/v1"
 	apiv1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,6 +36,7 @@ func init() {
 	Scheme = runtime.NewScheme()
 	utilruntime.Must(apiv1.AddToScheme(Scheme))
 	utilruntime.Must(api.AddToScheme(Scheme))
+	utilruntime.Must(dataservicev1.AddToScheme(Scheme))
 	yamlSerializer := json.NewYAMLSerializer(json.DefaultMetaFactory, Scheme, Scheme)
 	Codec = versioning.NewDefaultingCodecForScheme(
 		Scheme,

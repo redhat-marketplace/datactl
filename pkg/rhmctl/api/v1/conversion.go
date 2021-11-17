@@ -34,7 +34,7 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 			return err
 		}
 
-		b.MeteringExports[bD.FileName] = bD
+		b.MeteringExports[bD.DataServiceContext] = bD
 	}
 
 	return nil

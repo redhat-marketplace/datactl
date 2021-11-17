@@ -1,6 +1,7 @@
 package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import dataservicev1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/dataservice/v1"
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Config struct {
@@ -12,20 +13,36 @@ type Config struct {
 }
 
 type MeteringExport struct {
-	FileName string      `json:"name"`
-	Active   bool        `json:"active"`
-	Start    metav1.Time `json:"start"`
+	FileName string `json:"name"`
 
 	// +optional
-	End metav1.Time `json:"end,omitempty"`
+	DataServiceContext string `json:"data-service-context,omitempty"`
 
-	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
+	// +optional
+	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	Start *metav1.Time `json:"start,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	End *metav1.Time `json:"end,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	Active bool `json:"active,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	DFileInfo []*MeteringFileSummary `json:"info,omitempty"`
 }
 
+// DEPRECATED
 type MeteringFileSummary struct {
 	DataServiceContext string `json:"data-service-context"`
 	// +optional
-	Files []*FileInfo `json:"files,omitempty"`
+	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
 	// +optional
 	Committed bool `json:"committed,omitempty"`
 	// +optional

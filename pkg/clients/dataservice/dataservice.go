@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"emperror.dev/errors"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/shared"
-	api "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
-	clientcmdapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	dataservicev1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/dataservice/v1"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	"github.com/sirupsen/logrus"
@@ -37,9 +37,9 @@ type dataServiceClient struct {
 
 type Client interface {
 	DownloadFile(ctx context.Context, id string, w io.Writer) (checksum string, err error)
-	ListFiles(ctx context.Context, opts ListOptions, files *api.ListFilesResponse) error
-	GetFileById(ctx context.Context, id string, finfo *api.FileInfo) (err error)
-	GetFileByName(ctx context.Context, name, source, sourceType string, finfo *api.FileInfo) (err error)
+	ListFiles(ctx context.Context, opts ListOptions, files *dataservicev1.ListFilesResponse) error
+	GetFileById(ctx context.Context, id string, finfo *dataservicev1.FileInfo) (err error)
+	GetFileByName(ctx context.Context, name, source, sourceType string, finfo *dataservicev1.FileInfo) (err error)
 	DeleteFile(context.Context, string) error
 }
 
@@ -70,7 +70,7 @@ type ListOptions struct {
 	IncludeDeleted bool
 }
 
-func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, files *clientcmdapi.ListFilesResponse) error {
+func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, files *dataservicev1.ListFilesResponse) error {
 	req, err := d.req.ListFiles(ctx)
 	if err != nil {
 		logrus.WithError(err).Error("failed to get request")
@@ -91,9 +91,32 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 		q.Add(queryIncludeDeleted, "true")
 	}
 
+	filter := &strings.Builder{}
+
+	if !opts.BeforeDate.IsZero() {
+		filter.WriteString("createdAt < ")
+		filter.WriteRune('"')
+		filter.WriteString(opts.BeforeDate.Format(time.RFC3339))
+		filter.WriteRune('"')
+	}
+
+	if !opts.AfterDate.IsZero() {
+		if filter.Len() != 0 {
+			filter.WriteString("&&")
+		}
+		filter.WriteString("createdAt > ")
+		filter.WriteRune('"')
+		filter.WriteString(opts.AfterDate.Format(time.RFC3339))
+		filter.WriteRune('"')
+	}
+
+	if filter.Len() != 0 {
+		q.Add("filter", filter.String())
+	}
+
 	req.URL.RawQuery = q.Encode()
 
-	klog.Info("url is "+req.URL.String(), " ", req.URL.RawQuery)
+	klog.V(5).Info("url is "+req.URL.String(), " ", req.URL.RawQuery)
 
 	resp, err := d.Do(req)
 	if err != nil {
@@ -116,7 +139,7 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 		logrus.WithError(err).Error("failed to read body")
 	}
 
-	listResponse := &clientcmdapi.ListFilesResponse{}
+	listResponse := &dataservicev1.ListFilesResponse{}
 
 	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: latest.Version, Group: latest.Group, Kind: "ListFilesResponse"}, listResponse)
 	if err != nil {
@@ -124,11 +147,11 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 		return err
 	}
 
-	*files = *decoded.(*clientcmdapi.ListFilesResponse)
+	*files = *decoded.(*dataservicev1.ListFilesResponse)
 	return nil
 }
 
-func (d *dataServiceClient) GetFileById(ctx context.Context, id string, finfo *api.FileInfo) (err error) {
+func (d *dataServiceClient) GetFileById(ctx context.Context, id string, finfo *dataservicev1.FileInfo) (err error) {
 	req, err := d.req.GetFileByID(ctx, id)
 	if err != nil {
 		logrus.WithError(err).Error("failed to get request")
@@ -137,7 +160,7 @@ func (d *dataServiceClient) GetFileById(ctx context.Context, id string, finfo *a
 	return d.getFile(req, finfo)
 }
 
-func (d *dataServiceClient) GetFileByName(ctx context.Context, name, source, sourceType string, finfo *api.FileInfo) (err error) {
+func (d *dataServiceClient) GetFileByName(ctx context.Context, name, source, sourceType string, finfo *dataservicev1.FileInfo) (err error) {
 	req, err := d.req.GetFileByName(ctx, name, source, sourceType)
 	if err != nil {
 		logrus.WithError(err).Error("failed to get request")
@@ -201,7 +224,7 @@ func (d *dataServiceClient) DownloadFile(ctx context.Context, id string, w io.Wr
 	return checksum, nil
 }
 
-func (d *dataServiceClient) getFile(req *http.Request, finfo *api.FileInfo) (err error) {
+func (d *dataServiceClient) getFile(req *http.Request, finfo *dataservicev1.FileInfo) (err error) {
 	resp, err := d.Do(req)
 	if err != nil {
 		logrus.WithError(err).Error("failed to get request")
@@ -219,7 +242,7 @@ func (d *dataServiceClient) getFile(req *http.Request, finfo *api.FileInfo) (err
 		return err
 	}
 
-	getResponse := &clientcmdapi.GetFileResponse{}
+	getResponse := &dataservicev1.GetFileResponse{}
 
 	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: ""}, getResponse)
 	if err != nil {
@@ -227,7 +250,7 @@ func (d *dataServiceClient) getFile(req *http.Request, finfo *api.FileInfo) (err
 		return err
 	}
 
-	*finfo = *decoded.(*clientcmdapi.GetFileResponse).Info
+	*finfo = *decoded.(*dataservicev1.GetFileResponse).Info
 	return nil
 }
 

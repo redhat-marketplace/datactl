@@ -91,7 +91,7 @@ func (f *BundleFile) Walk(walk func(header *tar.Header, r io.Reader)) error {
 	return nil
 }
 
-func (f *BundleFile) Compact() error {
+func (f *BundleFile) Compact(fileNames map[string]interface{}) error {
 	headers := map[string]int{}
 	os.Remove(f.Name() + "compact")
 	newBundle, err := NewBundle(f.Name() + "compact")
@@ -124,6 +124,14 @@ func (f *BundleFile) Compact() error {
 
 		if !ok {
 			return nil
+		}
+
+		if fileNames != nil {
+			_, ok := fileNames[header.Name]
+
+			if !ok {
+				return nil
+			}
 		}
 
 		var w io.Writer

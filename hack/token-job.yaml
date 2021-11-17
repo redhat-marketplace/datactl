@@ -62,6 +62,6 @@ spec:
             sources:
               - serviceAccountToken:
                   audience: rhm-data-service.openshift-redhat-marketplace.svc
-                  expirationSeconds: 3600
+                  expirationSeconds: 86400
                   path: token
   backoffLimit: 4

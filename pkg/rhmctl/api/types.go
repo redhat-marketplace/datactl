@@ -1,6 +1,9 @@
 package api
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	dataservicev1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/dataservice/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Config struct {
@@ -14,24 +17,45 @@ type Config struct {
 type MeteringExport struct {
 	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
 	// +k8s:conversion-gen=false
-	LocationOfOrigin string
+	LocationOfOrigin string `json:"-"`
 
-	FileName string      `json:"name"`
-	Active   bool        `json:"active"`
-	Start    metav1.Time `json:"start"`
+	FileName string `json:"name"`
 
 	// +optional
-	End metav1.Time `json:"end,omitempty"`
+	DataServiceContext string `json:"data-service-context,omitempty"`
 
 	// +optional
-	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
+	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
+
+	// +k8s:conversion-gen=false
+	Committed bool `json:"-"`
+
+	// +k8s:conversion-gen=false
+	Pushed bool `json:"-"`
+
+	// DEPRECATED
+	// +optional
+	Start *metav1.Time `json:"start,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	End *metav1.Time `json:"end,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	Active bool `json:"active,omitempty"`
+
+	// DEPRECATED
+	// +optional
+	DFileInfo []*MeteringFileSummary `json:"info,omitempty"`
 }
 
+// DEPRECATED
 type MeteringFileSummary struct {
 	DataServiceContext string `json:"data-service-context"`
 
 	// +optional
-	Files []*FileInfo `json:"files,omitempty"`
+	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
 
 	Committed bool `json:"committed,omitempty"`
 
@@ -139,6 +163,7 @@ func NewDefaultConfig() *Config {
 
 func NewDefaultMeteringExport() *MeteringExport {
 	export := MeteringExport{}
-	export.Start = metav1.Now()
+	export.Start = nil
+	export.End = nil
 	return &export
 }
