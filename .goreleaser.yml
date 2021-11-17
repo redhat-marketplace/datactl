@@ -28,12 +28,16 @@ builds:
       - windows_amd64
 archives:
   - id: tar
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
+    replacements:
+      amd64: x86_64
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
     builds:
       - rhmctl
       - oc-rhmctl
-    format: binary
-    files:
-      - hack/token-job.yaml
+    format: tar
 checksum:
   name_template: 'checksums.txt'
 snapshot:

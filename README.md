@@ -23,17 +23,23 @@ extract it to a folder on your path.
 # Substitute BINARY_NAME for rhmctl or oc-rhmctl.
 BIN="/usr/local/bin" && \
 VERSION="0.2.0" && \
-BINARY_NAME="oc-rhmctl" && \
-  curl -sSL \
-    "https://github.com/bufbuild/buf/releases/download/v${VERSION}/${BINARY_NAME}-$(uname -s)-$(uname -m)" \
-    -o "${BIN}/${BINARY_NAME}" && \
-  chmod +x "${BIN}/${BINARY_NAME}"
+curl -sSL \
+    "https://github.com/bufbuild/buf/releases/download/v${VERSION}/${BINARY_NAME}__$(uname -s)__$(uname -m)" \
+    tar -xvzf - -C "${BIN}" \
+    && chmod +x "${BIN}/rhmctl" \
+    && chmod +x "${BIN}/oc-rhmctl"
 ```
 
 ## Usage
 
-RhmCtl tool is an OpenShift CLI plugin. You can call it via `oc rhmctl`. Or you can call
-the tool independently via
+### As an OC Plugin
+
+If the oc-rhmctl file is installed to your path. The oc command will recognize it as a plugin. You may
+call `oc rhmctl`
+
+### As a standalone tool
+
+RhmCtl tool can be used standalone. Just move rhmctl to your path and use `rhmctl`.
 
 ## Getting started
 
