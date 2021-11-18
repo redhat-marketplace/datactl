@@ -37,13 +37,13 @@ var (
 
 	pushExamples = templates.Examples(i18n.T(`
 		# Push the files in the active export
-	 	%[1]s export pull
+	 	{{ .cmd }} export push
 
 		# Run the push but perform no actions (dry-run).
-		%[1]s export pull --dry-run
+		{{ .cmd }} export push --dry-run
 
 		# Push a specific rhmctl file
-		%[1]s export pull --file=$HOME/.rhmctl/data/rhm-upload-20211111T000959Z.tar
+		{{ .cmd }} export push --file={{ .defaultDataPath }}/rhm-upload-20211111T000959Z.tar
 `))
 )
 
@@ -58,8 +58,8 @@ func NewCmdExportPush(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 		Use:                   "push [(--dry-run)]",
 		DisableFlagsInUseLine: true,
 		Short:                 i18n.T("Pushes commited files."),
-		Long:                  fmt.Sprintf(pushLong, output.CommandName()),
-		Example:               fmt.Sprintf(pushExamples, output.CommandName()),
+		Long:                  output.ReplaceCommandStrings(pushLong),
+		Example:               output.ReplaceCommandStrings(pushExamples),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate())

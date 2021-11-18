@@ -28,27 +28,26 @@ import (
 
 var (
 	configInitLong = templates.LongDesc(i18n.T(`
-		Configures the default config file (~/.rhmctl/config) with details about the cluster.
+		Configures the default config file ('{{ .defaultConfigFile }}') with details about the cluster.
 		The command will attempt to resolve the Dataservice URL. It will also prompt for the
 		Upload API endpoint and secret if they are not provided by flags.
 
 		If you are attempting to configure a host machine to upload payloads only; the --config-api-only
 		flag is provided to prevent kubernetes resources from being queried. This is to prevent unnecessary
-		errors with lack of access.
-`))
+		errors with lack of access.`))
 
 	configInitExample = templates.Examples(i18n.T(`
 		# Initialize the config, prompting for API and Token values.
-		%[1]s config init
+		{{ .cmd }} config init
 
 		# Initialize the config and preset upload URL and secret. Will not prompt.
-		%[1]s config init --api marketplace.redhat.com --token MY_TOKEN
+		{{ .cmd }} config init --api marketplace.redhat.com --token MY_TOKEN
 
 		# Initialize only the API config, prompting for API and Token values.
-		%[1]s config init --api-only
+		{{ .cmd }} config init --api-only
 
 		# Initialize the config, force resetting of values if they are already set.
-		%[1]s config init --force
+		{{ .cmd }} config init --force
 `))
 )
 
@@ -62,8 +61,8 @@ func NewCmdConfigInit(rhmFlags *config.ConfigFlags, f cmdutil.Factory, streams g
 		Use:                   "init",
 		DisableFlagsInUseLine: true,
 		Short:                 i18n.T("Initializes the config for Dataservice and API endpoints"),
-		Long:                  fmt.Sprintf(configInitLong, output.CommandName()),
-		Example:               fmt.Sprintf(configInitExample, output.CommandName()),
+		Long:                  output.ReplaceCommandStrings(configInitLong),
+		Example:               output.ReplaceCommandStrings(configInitExample),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate())

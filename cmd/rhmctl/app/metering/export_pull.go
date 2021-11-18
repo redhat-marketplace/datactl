@@ -34,20 +34,20 @@ var (
 		If the files have already been pulled then using the --include-deleted flag may be necessary.`))
 
 	pullExample = templates.Examples(i18n.T(`
-		# Pull all available files from the dataservice
-		%[1]s export pull
+		# Pull all available files from the current dataservice cluster to Usage
+		{{ .cmd }} export pull
 
 		# Pull all files before November 14th, 2021
-		%[1]s export pull --before 2021-11-15T00:00:00Z
+		{{ .cmd }} export pull --before 2021-11-15T00:00:00Z
 
 		# Pull all files after November 14th, 2021
-		%[1]s export pull --after 2021-11-14T00:00:00Z
+		{{ .cmd }} export pull
 
 		# Pull all files between November 14th, 2021 and November 15th, 2021
-		%[1]s export pull --after 2021-11-14T00:00:00Z --before 2021-11-15T00:00:00Z
+		{{ .cmd }} export pull --after 2021-11-14T00:00:00Z --before 2021-11-15T00:00:00Z
 
 		# Pull all deleted files
-		%[1]s export pull --include-deleted`))
+		{{ .cmd }} export pull --include-deleted`))
 )
 
 func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -61,8 +61,8 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 		Use:                   "pull [(--before DATE) (--after DATE) (--include-deleted)]",
 		DisableFlagsInUseLine: true,
 		Short:                 i18n.T("Pulls files from RHM Operator"),
-		Long:                  fmt.Sprintf(pullLong, output.CommandName()),
-		Example:               fmt.Sprintf(pullExample, output.CommandName()),
+		Long:                  output.ReplaceCommandStrings(pullLong),
+		Example:               output.ReplaceCommandStrings(pullExample),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate())

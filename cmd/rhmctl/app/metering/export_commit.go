@@ -2,7 +2,6 @@ package metering
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gotidy/ptr"
@@ -26,15 +25,15 @@ var (
 		Commits the file on the Red Hat Marketplace Dataservice.
 
 		Committing indicates that the user will be delivering the files for
-		processing by using the "%[1]s export push" command. Commiting files
+		processing by using the "{{ .cmd }} export push" command. Commiting files
 		are recorded in the rhmctl config file.`))
 
 	commitExample = templates.Examples(i18n.T(`
 		# Commit all files in the active export file.
-		%[1]s export commit
+		{{ .cmd }} export commit
 
 		# Run the commit but perform no actions (dry-run).
-		%[1]s export commit --dry-run
+		{{ .cmd }} export commit --dry-run
 `))
 )
 
@@ -49,8 +48,8 @@ func NewCmdExportCommit(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStrea
 		Use:                   "commit [(--dry-run)]",
 		DisableFlagsInUseLine: true,
 		Short:                 i18n.T("Finalizes the download of files."),
-		Long:                  fmt.Sprintf(commitLong, output.CommandName()),
-		Example:               fmt.Sprintf(commitExample, output.CommandName()),
+		Long:                  output.ReplaceCommandStrings(commitLong),
+		Example:               output.ReplaceCommandStrings(commitExample),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(o.Complete(cmd, args))
 			cmdutil.CheckErr(o.Validate())
