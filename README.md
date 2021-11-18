@@ -20,8 +20,14 @@ extract it to a folder on your path.
 
 ## Usage
 
-RhmCtl tool is an OpenShift CLI plugin. You can call it via `oc rhmctl`. Or you can call
-the tool independently via
+### As an OC Plugin
+
+If the oc-rhmctl file is installed to your path. The oc command will recognize it as a plugin. You may
+call `oc rhmctl`
+
+### As a standalone tool
+
+RhmCtl tool can be used standalone. Just move rhmctl to your path and use `rhmctl`.
 
 ## Getting started
 
