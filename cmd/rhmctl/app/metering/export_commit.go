@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
-	clientapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
@@ -40,9 +39,7 @@ var (
 )
 
 func NewCmdExportCommit(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	pathOptions := genericclioptions.NewConfigFlags(false)
 	o := exportCommitOptions{
-		configFlags:    pathOptions,
 		rhmConfigFlags: rhmFlags,
 		PrintFlags:     get.NewGetPrintFlags(),
 		IOStreams:      ioStreams,
@@ -72,7 +69,6 @@ func NewCmdExportCommit(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStrea
 }
 
 type exportCommitOptions struct {
-	configFlags    *genericclioptions.ConfigFlags
 	rhmConfigFlags *config.ConfigFlags
 	PrintFlags     *get.PrintFlags
 
@@ -81,7 +77,6 @@ type exportCommitOptions struct {
 	//internal
 	args        []string
 	humanOutput bool
-	rawConfig   clientapi.Config
 
 	rhmRawConfig *rhmctlapi.Config
 	dataService  dataservice.Client
@@ -98,11 +93,6 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 	c.args = args
 
 	var err error
-	c.rawConfig, err = c.configFlags.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return err
-	}
-
 	c.rhmRawConfig, err = c.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
@@ -113,7 +103,12 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 		return err
 	}
 
-	c.currentMeteringExport, c.bundle, err = createOrUpdateBundle(c.rawConfig.CurrentContext, c.rhmRawConfig)
+	c.currentMeteringExport, err = c.rhmConfigFlags.MeteringExport()
+	if err != nil {
+		return err
+	}
+
+	c.bundle, err = metering.NewBundleFromExport(c.currentMeteringExport)
 	if err != nil {
 		return err
 	}

@@ -16,6 +16,7 @@ import (
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 )
 
@@ -48,13 +49,11 @@ func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
 }
 
 type ClientConfigLoadingRules struct {
-	ExplicitFile string
-	ExplicitPath string
-	Precedence   []string
-
+	ExplicitFile      string
+	ExplicitPath      string
+	Precedence        []string
 	DoNotResolvePaths bool
-
-	WarnIfAllMissing bool
+	WarnIfAllMissing  bool
 }
 
 func (rules *ClientConfigLoadingRules) Load() (*clientcmdapi.Config, error) {
@@ -124,42 +123,6 @@ func (rules *ClientConfigLoadingRules) Load() (*clientcmdapi.Config, error) {
 	mergo.Merge(config, mapConfig, mergo.WithOverride)
 	mergo.Merge(config, nonMapConfig, mergo.WithOverride)
 
-	newExports := map[string]*clientcmdapi.MeteringExport{}
-
-	// migrate deprecated fields
-	for _, export := range config.MeteringExports {
-		if len(export.DFileInfo) == 0 {
-			newExports[export.DataServiceContext] = export
-			continue
-		}
-
-		for _, file := range export.DFileInfo {
-			exportToSet, ok := config.MeteringExports[file.DataServiceContext]
-
-			if ok {
-				exportToSetVal := *exportToSet
-				exportToSet.DataServiceContext = file.DataServiceContext
-				exportToSet.Files = file.Files
-				exportToSet.Active = false
-				exportToSet.DFileInfo = []*clientcmdapi.MeteringFileSummary{}
-				newExports[exportToSetVal.DataServiceContext] = &exportToSetVal
-			} else {
-				newExports[file.DataServiceContext] = &rhmctlapi.MeteringExport{
-					FileName:           export.FileName,
-					Start:              export.Start,
-					End:                export.End,
-					Active:             false,
-					DataServiceContext: file.DataServiceContext,
-					Files:              file.Files,
-				}
-			}
-		}
-	}
-
-	if len(newExports) != 0 {
-		config.MeteringExports = newExports
-	}
-
 	return config, utilerrors.NewAggregate(errlist)
 }
 
@@ -174,10 +137,11 @@ func (rules *ClientConfigLoadingRules) GetLoadingPrecedence() []string {
 
 // GetStartingConfig implements ConfigAccess
 func (rules *ClientConfigLoadingRules) GetStartingConfig() (*clientcmdapi.Config, error) {
-	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{})
+	kubectlConfig := genericclioptions.NewConfigFlags(false)
+	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{}, kubectlConfig)
 	rawConfig, err := clientConfig.RawConfig()
 	if os.IsNotExist(err) {
-		return clientcmdapi.NewDefaultConfig(), nil
+		return clientcmdapi.NewDefaultConfig(kubectlConfig)
 	}
 	if err != nil {
 		return nil, err

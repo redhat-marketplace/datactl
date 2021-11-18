@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	configcmd "github.com/redhat-marketplace/rhmctl/cmd/rhmctl/app/config"
@@ -62,6 +63,9 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	// From this point and forward we get warnings on flags that contain "_" separators
 	// when adding them with hyphen instead of the original name.
 	cmds.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
+	cmdutil.BehaviorOnFatal(func(msg string, exitCode int) {
+		logrus.Fatalf(msg)
+	})
 
 	flags := cmds.PersistentFlags()
 
@@ -70,16 +74,12 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	flags.BoolVar(&warningsAsErrors, "warnings-as-errors", warningsAsErrors, "Treat warnings received from the server as errors and exit with a non-zero exit code")
 
 	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
-	kubeConfigFlags.AddFlags(flags)
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
 	matchVersionKubeConfigFlags.AddFlags(flags)
 
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
-	rawConf, confErr := kubeConfigFlags.ToRawKubeConfigLoader().RawConfig()
-	cmdutil.CheckErr(confErr)
-
-	rhmConfigFlags := config.NewConfigFlags(rawConf.CurrentContext)
+	rhmConfigFlags := config.NewConfigFlags(kubeConfigFlags)
 	rhmConfigFlags.AddFlags(flags)
 
 	i18n.LoadTranslations("rhmctl", nil)
@@ -91,16 +91,16 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 			Message: "Metering Commands:",
 			Commands: []*cobra.Command{
 				metering.NewCmdExport(rhmConfigFlags, f, ioStreams),
-				metering.NewCmdList(f, ioStreams),
+				//metering.NewCmdList(f, ioStreams),
 			},
 		},
-		{
-			Message:  "Troubleshooting and Debugging Commands:",
-			Commands: []*cobra.Command{
-				// Patch
-				// MustGather
-			},
-		},
+		// {
+		// 	Message:  "Troubleshooting and Debugging Commands:",
+		// 	Commands: []*cobra.Command{
+		// 		// Patch
+		// 		// MustGather
+		// 	},
+		// },
 		{
 			Message: "Settings Commands:",
 			Commands: []*cobra.Command{

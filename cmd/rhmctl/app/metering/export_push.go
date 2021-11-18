@@ -48,9 +48,7 @@ var (
 )
 
 func NewCmdExportPush(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	pathOptions := genericclioptions.NewConfigFlags(false)
 	o := exportPushOptions{
-		configFlags:    pathOptions,
 		rhmConfigFlags: rhmFlags,
 		PrintFlags:     get.NewGetPrintFlags(),
 		IOStreams:      ioStreams,
@@ -83,7 +81,6 @@ func NewCmdExportPush(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 }
 
 type exportPushOptions struct {
-	configFlags    *genericclioptions.ConfigFlags
 	rhmConfigFlags *config.ConfigFlags
 	PrintFlags     *get.PrintFlags
 
@@ -112,11 +109,6 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 	e.args = args
 
 	var err error
-	e.rawConfig, err = e.configFlags.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return err
-	}
-
 	e.rhmRawConfig, err = e.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
@@ -132,11 +124,14 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if e.OverrideFile != "" {
-		e.currentMeteringExport, e.bundle, err = createOrUpdateBundle(e.rawConfig.CurrentContext, e.rhmRawConfig)
-		if err != nil {
-			return err
-		}
+	e.currentMeteringExport, err = e.rhmConfigFlags.MeteringExport()
+	if err != nil {
+		return err
+	}
+
+	e.bundle, err = metering.NewBundleFromExport(e.currentMeteringExport)
+	if err != nil {
+		return err
 	}
 
 	e.ToPrinter = func(operation string) (printers.ResourcePrinter, error) {

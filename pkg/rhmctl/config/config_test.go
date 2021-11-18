@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var _ = Describe("config", func() {
@@ -16,7 +17,7 @@ var _ = Describe("config", func() {
 marketplace:
   host: test.com
 data-service-endpoints:
-  - cluster-context-name: my-context
+  - cluster-name: foo.test
     url: "https://foo.test"
     insecure-skip-tls-verify: true`
 
@@ -50,28 +51,39 @@ data-service-endpoints:
 		Expect(err).To(Succeed())
 		Expect(conf).ToNot(BeNil())
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
-		Expect(conf.DataServiceEndpoints["my-context"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
+		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
 	})
 
 	It("should read file from flags", func() {
-		rhmConfigFlags := NewConfigFlags("my-context")
+		testFlags := genericclioptions.NewConfigFlags(false)
+		testFlags.Context = ptr.String("my-context")
+		testFlags.ClusterName = ptr.String("foo")
+
+		rhmConfigFlags := NewConfigFlags(testFlags)
 		rhmConfigFlags.RHMCTLConfig = ptr.String(name)
 
 		conf, err := rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 		Expect(err).To(Succeed())
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
-		Expect(conf.DataServiceEndpoints["my-context"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
+		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
 	})
 
 	It("should update file", func() {
-		rhmConfigFlags := NewConfigFlags("my-context")
+		testFlags := genericclioptions.NewConfigFlags(false)
+		testFlags.ClusterName = ptr.String("foo")
+		testFlags.Context = ptr.String("my-context")
+
+		rhmConfigFlags := NewConfigFlags(testFlags)
 		rhmConfigFlags.RHMCTLConfig = ptr.String(name)
 
 		conf, err := rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 		Expect(err).To(Succeed())
 
 		conf.MeteringExports["foo"] = &api.MeteringExport{
-			FileName: "foo",
+			FileName:           "foo",
+			DataServiceCluster: "foo.test",
 		}
 
 		Expect(ModifyConfig(rhmConfigFlags.ConfigAccess(), *conf, true)).To(Succeed())
@@ -80,7 +92,8 @@ data-service-endpoints:
 		Expect(err).To(Succeed())
 
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
-		Expect(conf.DataServiceEndpoints["my-context"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
+		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
 		Expect(conf.MeteringExports).To(HaveLen(1))
 	})
 })

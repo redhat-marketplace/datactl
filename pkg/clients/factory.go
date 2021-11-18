@@ -4,82 +4,98 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"strings"
 
-	"emperror.dev/errors"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
 	"github.com/redhat-marketplace/rhmctl/pkg/clients/marketplace"
 	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	"k8s.io/apimachinery/pkg/util/errors"
 )
 
 func ProvideDataService(
-	currentContext string,
-	rhmRawConfig *rhmctlapi.Config,
+	dsConfig *rhmctlapi.DataServiceEndpoint,
 ) (*dataservice.DataServiceConfig, error) {
-	dsConfig, exists := rhmRawConfig.DataServiceEndpoints[currentContext]
-
-	if !exists {
-		return nil, errors.New("data-service is not configured, run `rhmctl config init`")
-	}
-
+	errs := []error{}
 	tlsConfig := &tls.Config{}
 
-	if strings.HasPrefix(dsConfig.URL, "https") {
+	err := func() error {
+		if !strings.HasPrefix(dsConfig.URL, "https") {
+			return nil
+		}
+
 		if dsConfig.InsecureSkipTLSVerify {
 			tlsConfig.InsecureSkipVerify = true
-		} else {
-			rootCAs, _ := x509.SystemCertPool()
-			if rootCAs == nil {
-				rootCAs = x509.NewCertPool()
+			return nil
+		}
+
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+		tlsConfig.RootCAs = rootCAs
+
+		if dsConfig.CertificateAuthority != "" {
+			data, err := ioutil.ReadFile(dsConfig.CertificateAuthority)
+			if err != nil {
+				return fmt.Errorf("failed to read certificate authority file data from rhmctl config %s", err.Error())
 			}
-			tlsConfig.RootCAs = rootCAs
+			ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
+			if !ok {
+				return fmt.Errorf("failed to append certificate authority file data from rhmctl config")
+			}
+		} else if len(dsConfig.CertificateAuthorityData) != 0 {
+			data := []byte{}
+			_, err := base64.StdEncoding.Decode(data, dsConfig.CertificateAuthorityData)
 
-			if dsConfig.CertificateAuthority != "" {
-				data, err := ioutil.ReadFile(dsConfig.CertificateAuthority)
-				if err != nil {
-					return nil, errors.WithMessage(err, "failed to read certificate authority file data from rhmctl config")
-				}
-				ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
+			if err != nil {
+				return fmt.Errorf("failed to decode authority file data as base64 %s", err.Error())
+			}
 
-				if !ok {
-					return nil, errors.New("failed to read certificate authority file data from rhmctl config")
-				}
-			} else if len(dsConfig.CertificateAuthorityData) != 0 {
-				data := []byte{}
-				_, err := base64.StdEncoding.Decode(data, dsConfig.CertificateAuthorityData)
-
-				if err != nil {
-					return nil, errors.WithMessage(err, "failed to read certificate authority data from rhmctl config")
-				}
-
-				ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
-				if !ok {
-					return nil, errors.New("failed to read certificate authority data from rhmctl config")
-				}
+			ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
+			if !ok {
+				return fmt.Errorf("failed to read certificate authority data from rhmctl config")
 			}
 		}
+
+		return nil
+	}()
+
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	var token string
-	if dsConfig.Token != "" {
-		data, err := ioutil.ReadFile(dsConfig.Token)
-		if err != nil {
-			return nil, err
-		}
-		token = string(data)
-	}
 
-	if dsConfig.TokenData != "" {
+	err = func() error {
+		if dsConfig.TokenData == "" {
+			return nil
+		}
+
 		data, err := base64.StdEncoding.DecodeString(dsConfig.TokenData)
 		if err != nil {
 			token = dsConfig.TokenData
-		} else {
-			token = string(data)
+			return nil
 		}
+
+		token = string(data)
+		return nil
+	}()
+
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	token = strings.TrimSpace(token)
+
+	if len(errs) != 0 {
+		return nil, errors.NewAggregate(errs)
+	}
+
+	if token == "" {
+		return nil, fmt.Errorf("token or token-data not provided")
+	}
 
 	return &dataservice.DataServiceConfig{
 		URL:       dsConfig.URL,

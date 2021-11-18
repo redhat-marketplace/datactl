@@ -51,9 +51,7 @@ var (
 )
 
 func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
-	pathOptions := genericclioptions.NewConfigFlags(false)
 	o := exportPullOptions{
-		configFlags:    pathOptions,
 		rhmConfigFlags: rhmFlags,
 		PrintFlags:     get.NewGetPrintFlags(),
 		IOStreams:      ioStreams,
@@ -87,7 +85,6 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 }
 
 type exportPullOptions struct {
-	configFlags    *genericclioptions.ConfigFlags
 	rhmConfigFlags *config.ConfigFlags
 	PrintFlags     *get.PrintFlags
 
@@ -110,6 +107,7 @@ type exportPullOptions struct {
 
 	bundle                *metering.BundleFile
 	currentMeteringExport *rhmctlapi.MeteringExport
+	clusterName           string
 
 	genericclioptions.IOStreams
 }
@@ -118,11 +116,6 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	e.args = args
 
 	var err error
-	e.rawConfig, err = e.configFlags.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return err
-	}
-
 	e.rhmRawConfig, err = e.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
@@ -138,7 +131,12 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 		return e.PrintFlags.ToPrinter()
 	}
 
-	e.currentMeteringExport, e.bundle, err = createOrUpdateBundle(e.rawConfig.CurrentContext, e.rhmRawConfig)
+	e.currentMeteringExport, err = e.rhmConfigFlags.MeteringExport()
+	if err != nil {
+		return err
+	}
+
+	e.bundle, err = metering.NewBundleFromExport(e.currentMeteringExport)
 	if err != nil {
 		return err
 	}
@@ -171,7 +169,7 @@ func (e *exportPullOptions) Validate() error {
 	}
 
 	if e.bundle == nil {
-		return errors.New("command requires a current export file")
+		return errors.New("command requires a current export bundle file")
 	}
 
 	return nil

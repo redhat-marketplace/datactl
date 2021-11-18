@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"emperror.dev/errors"
+	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 )
 
@@ -168,6 +169,23 @@ func NewBundleWithDefaultName() (*BundleFile, error) {
 	}
 
 	return NewBundle(filename)
+}
+
+func NewBundleFromExport(export *rhmctlapi.MeteringExport) (*BundleFile, error) {
+	if export == nil {
+		return nil, errors.New("export is nil")
+	}
+
+	if export.FileName == "" {
+		bundle, err := NewBundleWithDefaultName()
+		if err != nil {
+			return nil, err
+		}
+		export.FileName = bundle.file.Name()
+		return bundle, err
+	}
+
+	return NewBundle(export.FileName)
 }
 
 func WalkTar(filepath string, walk func(header *tar.Header, r io.Reader) error) error {
