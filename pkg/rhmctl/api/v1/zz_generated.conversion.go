@@ -100,7 +100,7 @@ func autoConvert_api_Config_To_v1_Config(in *api.Config, out *Config, s conversi
 
 func autoConvert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(in *DataServiceEndpoint, out *api.DataServiceEndpoint, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
-	out.URL = in.URL
+	out.Host = in.Host
 	out.TokenData = in.TokenData
 	out.TokenExpiration = in.TokenExpiration
 	out.ServiceAccount = in.ServiceAccount
@@ -119,7 +119,7 @@ func Convert_v1_DataServiceEndpoint_To_api_DataServiceEndpoint(in *DataServiceEn
 func autoConvert_api_DataServiceEndpoint_To_v1_DataServiceEndpoint(in *api.DataServiceEndpoint, out *DataServiceEndpoint, s conversion.Scope) error {
 	// INFO: in.LocationOfOrigin opted out of conversion generation
 	out.ClusterName = in.ClusterName
-	out.URL = in.URL
+	out.Host = in.Host
 	out.TokenData = in.TokenData
 	out.TokenExpiration = in.TokenExpiration
 	out.ServiceAccount = in.ServiceAccount

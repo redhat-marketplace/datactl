@@ -60,7 +60,7 @@ type UploadAPI struct {
 type DataServiceEndpoint struct {
 	ClusterName string `json:"cluster-name"`
 
-	URL string `json:"url"`
+	Host string `json:"host"`
 
 	TokenData string `json:"token-data,omitempty"`
 

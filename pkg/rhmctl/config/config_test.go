@@ -52,7 +52,7 @@ data-service-endpoints:
 		Expect(conf).ToNot(BeNil())
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
 		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
-		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"].Host).To(Equal("foo.test"))
 	})
 
 	It("should read file from flags", func() {
@@ -67,7 +67,7 @@ data-service-endpoints:
 		Expect(err).To(Succeed())
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
 		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
-		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"].Host).To(Equal("foo.test"))
 	})
 
 	It("should update file", func() {
@@ -93,7 +93,7 @@ data-service-endpoints:
 
 		Expect(conf.DataServiceEndpoints).To(HaveLen(1))
 		Expect(conf.DataServiceEndpoints["foo.test"]).ToNot(BeNil())
-		Expect(conf.DataServiceEndpoints["foo.test"].URL).To(Equal("https://foo.test"))
+		Expect(conf.DataServiceEndpoints["foo.test"].Host).To(Equal("foo.test"))
 		Expect(conf.MeteringExports).To(HaveLen(1))
 	})
 })

@@ -37,13 +37,13 @@ var (
 		# Pull all available files from the dataservice
 		%[1]s export pull
 
-		# Pull all files before November, 14th 2021
+		# Pull all files before November 14th, 2021
 		%[1]s export pull --before 2021-11-15T00:00:00Z
 
-		# Pull all files after November, 14th 2021
+		# Pull all files after November 14th, 2021
 		%[1]s export pull --after 2021-11-14T00:00:00Z
 
-		# Pull all files between November, 14th 2021 and November 15th 2021
+		# Pull all files between November 14th, 2021 and November 15th, 2021
 		%[1]s export pull --after 2021-11-14T00:00:00Z --before 2021-11-15T00:00:00Z
 
 		# Pull all deleted files

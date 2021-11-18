@@ -95,7 +95,7 @@ type DataServiceEndpoint struct {
 
 	ClusterName string `json:"cluster-name"`
 
-	URL string `json:"url"`
+	Host string `json:"host"`
 
 	// TokenData is base64 encoded token in the config file, env var, or token argument
 	TokenData string `json:"token-data,omitempty"`

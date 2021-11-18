@@ -21,10 +21,6 @@ func ProvideDataService(
 	tlsConfig := &tls.Config{}
 
 	err := func() error {
-		if !strings.HasPrefix(dsConfig.URL, "https") {
-			return nil
-		}
-
 		if dsConfig.InsecureSkipTLSVerify {
 			tlsConfig.InsecureSkipVerify = true
 			return nil
@@ -46,14 +42,7 @@ func ProvideDataService(
 				return fmt.Errorf("failed to append certificate authority file data from rhmctl config")
 			}
 		} else if len(dsConfig.CertificateAuthorityData) != 0 {
-			data := []byte{}
-			_, err := base64.StdEncoding.Decode(data, dsConfig.CertificateAuthorityData)
-
-			if err != nil {
-				return fmt.Errorf("failed to decode authority file data as base64 %s", err.Error())
-			}
-
-			ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
+			ok := tlsConfig.RootCAs.AppendCertsFromPEM(dsConfig.CertificateAuthorityData)
 			if !ok {
 				return fmt.Errorf("failed to read certificate authority data from rhmctl config")
 			}
@@ -97,8 +86,14 @@ func ProvideDataService(
 		return nil, fmt.Errorf("token or token-data not provided")
 	}
 
+	url := dsConfig.Host
+
+	if !strings.HasPrefix(url, "https://") {
+		url = fmt.Sprintf("https://" + url)
+	}
+
 	return &dataservice.DataServiceConfig{
-		URL:       dsConfig.URL,
+		URL:       url,
 		Token:     token,
 		TlsConfig: tlsConfig,
 	}, nil

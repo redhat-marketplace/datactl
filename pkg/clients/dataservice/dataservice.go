@@ -275,7 +275,7 @@ func (d *dataServiceClient) DeleteFile(ctx context.Context, id string) error {
 		return err
 	}
 
-	log.Info("deleted file")
+	log.Debug("deleted file")
 	return nil
 }
 
