@@ -131,8 +131,14 @@ func ProvideMarketplaceUpload(
 		rootCAs = x509.NewCertPool()
 	}
 
+	url := rhmRawConfig.MarketplaceEndpoint.Host
+
+	if !strings.HasPrefix(url, "https://") {
+		url = fmt.Sprintf("https://" + url)
+	}
+
 	return &marketplace.MarketplaceConfig{
-		URL:   rhmRawConfig.MarketplaceEndpoint.Host,
+		URL:   url,
 		Token: token,
 		TlsConfig: &tls.Config{
 			RootCAs: rootCAs,
