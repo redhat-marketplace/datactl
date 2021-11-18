@@ -33,8 +33,15 @@ const (
 	fileMode os.FileMode = 0640
 )
 
-func (f *BundleFile) open(filepath string) error {
-	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, fileMode)
+func (f *BundleFile) open(fileName string) error {
+	dir := filepath.Dir(fileName)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, fileMode)
 	if err != nil {
 		return err
 	}

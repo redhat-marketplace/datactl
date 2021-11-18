@@ -14,7 +14,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	cliflag "k8s.io/component-base/cli/flag"
-	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util"
 	"k8s.io/kubectl/pkg/util/i18n"
@@ -122,7 +121,7 @@ func NewRhmCtlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	templates.ActsAsRootCommand(cmds, filters, groups...)
 
 	util.SetFactoryForCompletion(f)
-	registerCompletionFuncForGlobalFlags(cmds, f)
+	// registerCompletionFuncForGlobalFlags(cmds, f)
 
 	//cmds.AddCommand(cmdconfig.NewCmdConfig(clientcmd.NewDefaultPathOptions(), ioStreams))
 
@@ -135,25 +134,25 @@ func runHelp(cmd *cobra.Command, args []string) {
 	cmd.Help()
 }
 
-func registerCompletionFuncForGlobalFlags(cmd *cobra.Command, f cmdutil.Factory) {
-	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
-		"namespace",
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return get.CompGetResource(f, cmd, "namespace", toComplete), cobra.ShellCompDirectiveNoFileComp
-		}))
-	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
-		"context",
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return util.ListContextsInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
-		}))
-	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
-		"cluster",
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return util.ListClustersInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
-		}))
-	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
-		"user",
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return util.ListUsersInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
-		}))
-}
+// func registerCompletionFuncForGlobalFlags(cmd *cobra.Command, f cmdutil.Factory) {
+// 	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
+// 		"namespace",
+// 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// 			return get.CompGetResource(f, cmd, "namespace", toComplete), cobra.ShellCompDirectiveNoFileComp
+// 		}))
+// 	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
+// 		"context",
+// 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// 			return util.ListContextsInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
+// 		}))
+// 	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
+// 		"cluster",
+// 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// 			return util.ListClustersInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
+// 		}))
+// 	cmdutil.CheckErr(cmd.RegisterFlagCompletionFunc(
+// 		"user",
+// 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// 			return util.ListUsersInConfig(toComplete), cobra.ShellCompDirectiveNoFileComp
+// 		}))
+// }

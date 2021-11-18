@@ -6,11 +6,13 @@ require (
 	emperror.dev/errors v0.8.0
 	github.com/gotidy/ptr v1.3.0
 	github.com/imdario/mergo v0.3.12
+	github.com/manifoldco/promptui v0.9.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
+	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.3
 	k8s.io/cli-runtime v0.22.2
 	k8s.io/client-go v0.22.2
@@ -60,7 +62,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/term v0.0.0-20210610120745-9d4ed1856297 // indirect
@@ -94,7 +95,6 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.22.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20210817084001-7fbd8d59e5b8 // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b // indirect
 	sigs.k8s.io/kustomize/api v0.8.11 // indirect
