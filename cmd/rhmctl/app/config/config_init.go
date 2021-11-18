@@ -212,7 +212,7 @@ func (init *configInitOptions) discoverDataServiceCA() error {
 	}
 
 	dataServiceHost := init.dataServiceConfig.Host
-	if !strings.HasSuffix(dataServiceHost, ":443") {
+	if !strings.HasSuffix(dataServiceHost, ":443") && strings.IndexRune(dataServiceHost, ':') == -1 {
 		dataServiceHost = dataServiceHost + ":443"
 	}
 

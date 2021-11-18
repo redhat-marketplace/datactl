@@ -42,10 +42,11 @@ func ProvideDataService(
 				return fmt.Errorf("failed to append certificate authority file data from rhmctl config")
 			}
 		} else if len(dsConfig.CertificateAuthorityData) != 0 {
-			ok := tlsConfig.RootCAs.AppendCertsFromPEM(dsConfig.CertificateAuthorityData)
-			if !ok {
-				return fmt.Errorf("failed to read certificate authority data from rhmctl config")
+			cert, err := x509.ParseCertificate(dsConfig.CertificateAuthorityData)
+			if err != nil {
+				return fmt.Errorf("failed to read certificate authority file data from rhmctl config %s", err.Error())
 			}
+			tlsConfig.RootCAs.AddCert(cert)
 		}
 
 		return nil

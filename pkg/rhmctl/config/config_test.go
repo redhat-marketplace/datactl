@@ -18,7 +18,7 @@ marketplace:
   host: test.com
 data-service-endpoints:
   - cluster-name: foo.test
-    url: "https://foo.test"
+    host: "foo.test"
     insecure-skip-tls-verify: true`
 
 		f    *os.File
