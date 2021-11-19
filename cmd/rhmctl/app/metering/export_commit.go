@@ -166,7 +166,7 @@ func (c *exportCommitOptions) Run() error {
 			logrus.WithError(err).WithField("id", file.Id).Warn("failed to delete file")
 			file.Error = err.Error()
 			file.Committed = false
-			file.Action = "Error"
+			file.Action = "CommitErr"
 			print.PrintObj(file, writer)
 			writer.Flush()
 			continue

@@ -273,6 +273,8 @@ func (e *exportPushOptions) Run() error {
 			return nil
 		}
 
+		file.Action = "Push"
+
 		if e.dryRun {
 			print.PrintObj(file, writer)
 			writer.Flush()
@@ -284,6 +286,7 @@ func (e *exportPushOptions) Run() error {
 			details := errors.GetDetails(err)
 			err = errors.Errorf("%s %+v", err.Error(), details)
 			file.Error = err.Error()
+			file.Action = "PushErr"
 			file.Pushed = false
 			print.PrintObj(file, writer)
 			writer.Flush()
