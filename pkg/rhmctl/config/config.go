@@ -71,13 +71,6 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 		return err
 	}
 
-	// We need to find all differences, locate their original files, read a partial config to modify only that stanza and write out the file.
-	// Special case the test for current context and preferences since those always write to the default file.
-	if reflect.DeepEqual(*startingConfig, newConfig) {
-		// nothing to do
-		return nil
-	}
-
 	for key, endpoint := range newConfig.DataServiceEndpoints {
 		startingEndpoint, exists := startingConfig.DataServiceEndpoints[key]
 
@@ -111,6 +104,8 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 		}
 	}
 
+	newExports := map[string]*rhmctlapi.MeteringExport{}
+
 	for key, export := range newConfig.MeteringExports {
 		startingExport, exists := startingConfig.MeteringExports[key]
 		destinationFile := export.LocationOfOrigin
@@ -123,26 +118,32 @@ func ModifyConfig(configAccess ConfigAccess, newConfig rhmctlapi.Config, relativ
 			startingExport = &rhmctlapi.MeteringExport{}
 		}
 
+		if !reflect.DeepEqual(newExports[key], startingExport) || !exists {
+			newExports[key] = export
+			newExports[key].LocationOfOrigin = destinationFile
+		}
+	}
+
+	if len(newExports) != 0 {
 		if err := writeConfig(configAccess,
 			func(in *rhmctlapi.Config) (bool, error) {
-				if !reflect.DeepEqual(in, startingExport) || !exists {
-					t := *export
-					in.MeteringExports[key] = &t
-					in.MeteringExports[key].LocationOfOrigin = destinationFile
+				in.MeteringExports = newExports
 
-					// if relativizePaths {
-					// 	if err := RelativizeEndpointLocalPaths(in.DataServiceEndpoints[key]); err != nil {
-					// 		return false, err
-					// 	}
-					// }
-
-					return true, nil
-				}
-
-				return false, nil
+				return true, nil
 			}); err != nil {
 			return err
 		}
+	}
+
+	if err := writeConfig(configAccess,
+		func(in *rhmctlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in, startingConfig.MarketplaceEndpoint) {
+				in.MarketplaceEndpoint = newConfig.MarketplaceEndpoint
+				return true, nil
+			}
+			return false, nil
+		}); err != nil {
+		return err
 	}
 
 	return nil

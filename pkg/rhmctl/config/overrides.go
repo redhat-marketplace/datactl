@@ -9,7 +9,7 @@ import (
 //TODO: add all overrides
 
 type ConfigOverrides struct {
-	Marketplace rhmctlapi.Marketplace
+	Marketplace rhmctlapi.UploadAPI
 
 	CurrentContext string
 	Timeout        string
@@ -27,7 +27,7 @@ type MarketplaceOverrideFlags struct {
 }
 
 const (
-	FlagMarketplaceHost = "marketplace-host"
+	FlagMarketplaceHost = "upload-api-host"
 	FlagContext         = "context"
 	FlagTimeout         = "request-timeout"
 )
@@ -60,6 +60,6 @@ func BindOverrideFlags(overrides *ConfigOverrides, flags *pflag.FlagSet, flagNam
 	BindMarketplaceFlags(&overrides.Marketplace, flags, flagNames.Marketplace)
 }
 
-func BindMarketplaceFlags(clusterInfo *rhmctlapi.Marketplace, flags *pflag.FlagSet, flagNames MarketplaceOverrideFlags) {
+func BindMarketplaceFlags(clusterInfo *rhmctlapi.UploadAPI, flags *pflag.FlagSet, flagNames MarketplaceOverrideFlags) {
 	flagNames.Host.BindStringFlag(flags, &clusterInfo.Host)
 }

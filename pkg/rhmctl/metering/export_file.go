@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"emperror.dev/errors"
+	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
 	"github.com/redhat-marketplace/rhmctl/pkg/rhmctl/config"
 )
 
@@ -32,8 +33,15 @@ const (
 	fileMode os.FileMode = 0640
 )
 
-func (f *BundleFile) open(filepath string) error {
-	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, fileMode)
+func (f *BundleFile) open(fileName string) error {
+	dir := filepath.Dir(fileName)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, fileMode)
 	if err != nil {
 		return err
 	}
@@ -91,7 +99,7 @@ func (f *BundleFile) Walk(walk func(header *tar.Header, r io.Reader)) error {
 	return nil
 }
 
-func (f *BundleFile) Compact() error {
+func (f *BundleFile) Compact(fileNames map[string]interface{}) error {
 	headers := map[string]int{}
 	os.Remove(f.Name() + "compact")
 	newBundle, err := NewBundle(f.Name() + "compact")
@@ -124,6 +132,14 @@ func (f *BundleFile) Compact() error {
 
 		if !ok {
 			return nil
+		}
+
+		if fileNames != nil {
+			_, ok := fileNames[header.Name]
+
+			if !ok {
+				return nil
+			}
 		}
 
 		var w io.Writer
@@ -160,6 +176,23 @@ func NewBundleWithDefaultName() (*BundleFile, error) {
 	}
 
 	return NewBundle(filename)
+}
+
+func NewBundleFromExport(export *rhmctlapi.MeteringExport) (*BundleFile, error) {
+	if export == nil {
+		return nil, errors.New("export is nil")
+	}
+
+	if export.FileName == "" {
+		bundle, err := NewBundleWithDefaultName()
+		if err != nil {
+			return nil, err
+		}
+		export.FileName = bundle.file.Name()
+		return bundle, err
+	}
+
+	return NewBundle(export.FileName)
 }
 
 func WalkTar(filepath string, walk func(header *tar.Header, r io.Reader) error) error {

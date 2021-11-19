@@ -16,6 +16,8 @@ type ClientConfig interface {
 
 	DataServiceClientConfig() (*dataservice.DataServiceConfig, error)
 
+	MeteringExport() (*rhmctlapi.MeteringExport, error)
+
 	ConfigAccess() ConfigAccess
 }
 
@@ -49,6 +51,16 @@ func (c *clientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig
 	}
 
 	return config, err
+}
+
+func (c *clientConfig) MeteringExport() (*rhmctlapi.MeteringExport, error) {
+	exp, err := c.defaultClientConfig.MeteringExport()
+
+	if clientcmd.IsEmptyConfig(err) {
+		return nil, genericclioptions.ErrEmptyConfig
+	}
+
+	return exp, nil
 }
 
 func (c *clientConfig) ConfigAccess() ConfigAccess {

@@ -16,6 +16,7 @@ import (
 	clientcmdlatest "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/latest"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 )
 
@@ -48,13 +49,11 @@ func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
 }
 
 type ClientConfigLoadingRules struct {
-	ExplicitFile string
-	ExplicitPath string
-	Precedence   []string
-
+	ExplicitFile      string
+	ExplicitPath      string
+	Precedence        []string
 	DoNotResolvePaths bool
-
-	WarnIfAllMissing bool
+	WarnIfAllMissing  bool
 }
 
 func (rules *ClientConfigLoadingRules) Load() (*clientcmdapi.Config, error) {
@@ -138,10 +137,11 @@ func (rules *ClientConfigLoadingRules) GetLoadingPrecedence() []string {
 
 // GetStartingConfig implements ConfigAccess
 func (rules *ClientConfigLoadingRules) GetStartingConfig() (*clientcmdapi.Config, error) {
-	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{})
+	kubectlConfig := genericclioptions.NewConfigFlags(false)
+	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{}, kubectlConfig)
 	rawConfig, err := clientConfig.RawConfig()
 	if os.IsNotExist(err) {
-		return clientcmdapi.NewDefaultConfig(), nil
+		return clientcmdapi.NewDefaultConfig(kubectlConfig)
 	}
 	if err != nil {
 		return nil, err

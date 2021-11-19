@@ -77,5 +77,9 @@ var _ = Describe("export_file", func() {
 			Expect(file.Name()).To(Equal(expectedFiles[i]))
 			Expect(file.Size()).To(Equal(lens[i]))
 		}
+
+		os.RemoveAll(tmpdir)
+		tarFile, err = NewBundle(file.Name())
+		Expect(err).To(Succeed())
 	})
 })

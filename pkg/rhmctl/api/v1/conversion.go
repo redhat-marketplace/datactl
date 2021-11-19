@@ -21,7 +21,7 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 		if err != nil {
 			return err
 		}
-		b.DataServiceEndpoints[aD.ClusterContextName] = bD
+		b.DataServiceEndpoints[aD.ClusterName] = bD
 	}
 
 	b.MeteringExports = make(map[string]*api.MeteringExport)
@@ -34,7 +34,7 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 			return err
 		}
 
-		b.MeteringExports[bD.FileName] = bD
+		b.MeteringExports[bD.DataServiceCluster] = bD
 	}
 
 	return nil

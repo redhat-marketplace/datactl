@@ -1,10 +1,11 @@
 package v1
 
+import dataservicev1 "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api/dataservice/v1"
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Config struct {
-	MarketplaceEndpoint Marketplace `json:"marketplace"`
+	MarketplaceEndpoint UploadAPI `json:"upload-api"`
 
 	MeteringExports []*MeteringExport `json:"metering-export-history,omitempty"`
 
@@ -12,27 +13,16 @@ type Config struct {
 }
 
 type MeteringExport struct {
-	FileName string      `json:"name"`
-	Active   bool        `json:"active"`
-	Start    metav1.Time `json:"start"`
+	FileName string `json:"name"`
 
 	// +optional
-	End metav1.Time `json:"end,omitempty"`
+	DataServiceCluster string `json:"data-service-cluster,omitempty"`
 
-	FileInfo []*MeteringFileSummary `json:"info,omitempty"`
+	// +optional
+	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
 }
 
-type MeteringFileSummary struct {
-	DataServiceContext string `json:"data-service-context"`
-	// +optional
-	Files []*FileInfo `json:"files,omitempty"`
-	// +optional
-	Committed bool `json:"committed,omitempty"`
-	// +optional
-	Pushed bool `json:"pushed,omitempty"`
-}
-
-type Marketplace struct {
+type UploadAPI struct {
 	// Host is the url of the marketplace i.e. marketplace.redhat.com
 	Host string `json:"host"`
 
@@ -68,16 +58,17 @@ type Marketplace struct {
 }
 
 type DataServiceEndpoint struct {
-	ClusterContextName string `json:"cluster-context-name"`
+	ClusterName string `json:"cluster-name"`
 
-	URL string `json:"url"`
+	Host string `json:"host"`
+
+	TokenData string `json:"token-data,omitempty"`
+
+	TokenExpiration metav1.Time `json:"token-expiration,omitempty"`
 
 	ServiceAccount string `json:"service-account,omitempty"`
 
-	// Token is a filepath
-	Token string `json:"token,omitempty"`
-
-	TokenData string `json:"token-data,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 
 	// InsecureSkipTLSVerify skips the validity check for the server's certificate. This will make your HTTPS connections insecure.
 	// +optional
@@ -90,16 +81,4 @@ type DataServiceEndpoint struct {
 	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthority
 	// +optional
 	CertificateAuthorityData []byte `json:"certificate-authority-data,omitempty"`
-
-	// ProxyURL is the URL to the proxy to be used for all requests made by this
-	// client. URLs with "http", "https", and "socks5" schemes are supported.  If
-	// this configuration is not provided or the empty string, the client
-	// attempts to construct a proxy configuration from http_proxy and
-	// https_proxy environment variables. If these environment variables are not
-	// set, the client does not attempt to proxy requests.
-	//
-	// socks5 proxying does not currently support spdy streaming endpoints (exec,
-	// attach, port forward).
-	// +optional
-	ProxyURL string `json:"proxy-url,omitempty"`
 }
