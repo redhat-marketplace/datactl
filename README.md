@@ -33,15 +33,15 @@ Datactl tool can be used standalone. Just move datactl to your path and use `dat
 
 1. Get your Red Hat Marketplace Pull Secret.
 
-2. Setup your configuration.
+2. Log in to your cluster.
+
+3. Setup your configuration.
 
    ```sh
    oc datactl config init
    ```
 
    This will create the default configuration on your home directory. `~/.datactl/config`
-
-3. Log in to your cluster.
 
 4. Add the role-binding to the default service account on operator-namespace.
 
