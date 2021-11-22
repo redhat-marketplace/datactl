@@ -8,14 +8,14 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/redhat-marketplace/rhmctl/pkg/clients/dataservice"
-	"github.com/redhat-marketplace/rhmctl/pkg/clients/marketplace"
-	rhmctlapi "github.com/redhat-marketplace/rhmctl/pkg/rhmctl/api"
+	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
+	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"k8s.io/apimachinery/pkg/util/errors"
 )
 
 func ProvideDataService(
-	dsConfig *rhmctlapi.DataServiceEndpoint,
+	dsConfig *datactlapi.DataServiceEndpoint,
 ) (*dataservice.DataServiceConfig, error) {
 	errs := []error{}
 	tlsConfig := &tls.Config{}
@@ -35,16 +35,16 @@ func ProvideDataService(
 		if dsConfig.CertificateAuthority != "" {
 			data, err := ioutil.ReadFile(dsConfig.CertificateAuthority)
 			if err != nil {
-				return fmt.Errorf("failed to read certificate authority file data from rhmctl config %s", err.Error())
+				return fmt.Errorf("failed to read certificate authority file data from datactl config %s", err.Error())
 			}
 			ok := tlsConfig.RootCAs.AppendCertsFromPEM(data)
 			if !ok {
-				return fmt.Errorf("failed to append certificate authority file data from rhmctl config")
+				return fmt.Errorf("failed to append certificate authority file data from datactl config")
 			}
 		} else if len(dsConfig.CertificateAuthorityData) != 0 {
 			cert, err := x509.ParseCertificate(dsConfig.CertificateAuthorityData)
 			if err != nil {
-				return fmt.Errorf("failed to read certificate authority file data from rhmctl config %s", err.Error())
+				return fmt.Errorf("failed to read certificate authority file data from datactl config %s", err.Error())
 			}
 			tlsConfig.RootCAs.AddCert(cert)
 		}
@@ -101,7 +101,7 @@ func ProvideDataService(
 }
 
 func ProvideMarketplaceUpload(
-	rhmRawConfig *rhmctlapi.Config,
+	rhmRawConfig *datactlapi.Config,
 ) (*marketplace.MarketplaceConfig, error) {
 	mktplConfig := rhmRawConfig.MarketplaceEndpoint
 
