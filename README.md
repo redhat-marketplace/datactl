@@ -1,10 +1,10 @@
-# Red Hat Marketplace Control CLI (rhmctl)
+# Data Collection CLI (datactl)
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 
 **Table of Contents**
 
-- [Red Hat Marketplace Control CLI (rhmctl)](#red-hat-marketplace-control-cli-rhmctl)
+- [Data Collection CLI (datactl)](#red-hat-marketplace-control-cli-datactl)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Getting started](#getting-started)
@@ -14,7 +14,7 @@
 
 ## Installation
 
-The tool is available via prebuilt executables on the [latest release](https://github.com/redhat-marketplace/rhmctl/releases/latest).
+The tool is available via prebuilt executables on the [latest release](https://github.com/redhat-marketplace/datactl/releases/latest).
 To install the tool to your local system, download the targz file and
 extract it to a folder on your path.
 
@@ -22,12 +22,12 @@ extract it to a folder on your path.
 
 ### As an OC Plugin
 
-If the oc-rhmctl file is installed to your path. The oc command will recognize it as a plugin. You may
-call `oc rhmctl`
+If the oc-datactl file is installed to your path. The oc command will recognize it as a plugin. You may
+call `oc datactl`
 
 ### As a standalone tool
 
-RhmCtl tool can be used standalone. Just move rhmctl to your path and use `rhmctl`.
+Datactl tool can be used standalone. Just move datactl to your path and use `datactl`.
 
 ## Getting started
 
@@ -36,17 +36,17 @@ RhmCtl tool can be used standalone. Just move rhmctl to your path and use `rhmct
 2. Setup your configuration.
 
    ```sh
-   oc rhmctl config init
+   oc datactl config init
    ```
 
-   This will create the default configuration on your home directory. `~/.rhmctl/config`
+   This will create the default configuration on your home directory. `~/.datactl/config`
 
 3. Log in to your cluster.
 
 4. Add the role-binding to the default service account on operator-namespace.
 
    Install the role and role binding for the default service account for the `openshift-redhat-marketplace`
-   namespace. The rhmctl tool will use these by default.
+   namespace. The datactl tool will use these by default.
 
    ```sh
    oc apply -f service-account-role.yaml // file found in release
@@ -59,26 +59,26 @@ RhmCtl tool can be used standalone. Just move rhmctl to your path and use `rhmct
 Recommended approach is to run the commands in this order:
 
 ```sh
-oc rhmctl export pull
-oc rhmctl export commit
-oc rhmctl export push
+oc datactl export pull
+oc datactl export commit
+oc datactl export push
 ```
 
 Let's break down what each one is doing.
 
-`oc rhmctl export pull`
+`oc datactl export pull`
 
-- Pulls files from data service and stores them in a tar file under your `~/.rhmctl/data` folder.
-- Writes the status of the files found in `~/.rhmctl/config`
+- Pulls files from data service and stores them in a tar file under your `~/.datactl/data` folder.
+- Writes the status of the files found in `~/.datactl/config`
 
-`oc rhmctl export commit`
+`oc datactl export commit`
 
 - Commits the files to the dataservice.
 - At this point you're telling the data service that you've retrieved these files and will submit them to Red Hat Marketplace.
 - After some time, the files in dataservice will be cleaned up to save space.
 
-`oc rhmctl export push`
+`oc datactl export push`
 
 - Pushes the files pulled to Red Hat Marketplace.
 
-If you want to transfer it somewhere else, you can find the tar file under your `~/.rhmctl/data/` directory.
+If you want to transfer it somewhere else, you can find the tar file under your `~/.datactl/data/` directory.

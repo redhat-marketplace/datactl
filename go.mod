@@ -1,4 +1,4 @@
-module github.com/redhat-marketplace/rhmctl
+module github.com/redhat-marketplace/datactl
 
 go 1.17
 

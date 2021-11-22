@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/redhat-marketplace/rhmctl/pkg/clients/shared"
+	"github.com/redhat-marketplace/datactl/pkg/clients/shared"
 )
 
 type MarketplaceConfig struct {
