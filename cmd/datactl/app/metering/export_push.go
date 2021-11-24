@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metering
 
 import (
@@ -10,14 +24,12 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/gotidy/ptr"
-	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/metering"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -30,7 +42,7 @@ import (
 
 var (
 	pushLong = templates.LongDesc(i18n.T(`
-		Pushes files to the Red Hat Marketplace metrics processing backends.
+		Pushes files to the metrics processing backends.
 
 		Pushing uses the current kubernetes context and records the results into
 		the datactl config file.`))
@@ -94,7 +106,6 @@ type exportPushOptions struct {
 	rawConfig   clientapi.Config
 
 	rhmRawConfig *datactlapi.Config
-	dataService  dataservice.Client
 	marketplace  marketplace.Client
 
 	currentMeteringExport *datactlapi.MeteringExport
@@ -110,11 +121,6 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 
 	var err error
 	e.rhmRawConfig, err = e.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
-	if err != nil {
-		return err
-	}
-
-	e.dataService, err = e.rhmConfigFlags.DataServiceClient()
 	if err != nil {
 		return err
 	}
@@ -141,6 +147,7 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 
 	if e.PrintFlags.OutputFormat == nil || *e.PrintFlags.OutputFormat == "wide" || *e.PrintFlags.OutputFormat == "" {
 		e.humanOutput = true
+		output.SetOutput(e.Out, true)
 		e.PrintFlags.OutputFormat = ptr.String("wide")
 	}
 
@@ -157,78 +164,10 @@ func (e *exportPushOptions) Validate() error {
 	return nil
 }
 
-func (e *exportPushOptions) runFileOnly(ctx context.Context) error {
-	if e.dryRun {
-		logrus.Warn(i18n.T("dry-run enabled, files will not be removed from data service"))
-	}
-
-	writer := printers.GetNewTabWriter(e.Out)
-
-	print, err := e.ToPrinter("push")
-	if err != nil {
-		return err
-	}
-
-	print = output.NewPushFileOnlyCLITableOrStruct(e.PrintFlags, print)
-
-	if e.dryRun {
-		logrus.Warn(i18n.T("dry-run enabled, files will not be removed from data service"))
-	}
-
-	err = metering.WalkTar(e.OverrideFile, func(header *tar.Header, r io.Reader) error {
-		// skip our helper commit file
-		if header.Name == "commit.json" {
-			return nil
-		}
-
-		file := &dataservicev1.FileInfoCTLAction{
-			FileInfo: &dataservicev1.FileInfo{},
-		}
-		file.Name = header.Name
-		file.Size = uint32(header.Size)
-		file.Action = "Pushed"
-
-		if e.dryRun {
-			print.PrintObj(file, writer)
-			writer.Flush()
-			return nil
-		}
-
-		id, err := e.marketplace.Metrics().Upload(ctx, header.Name, r)
-		if err != nil {
-			details := errors.GetDetails(err)
-			err = errors.Errorf("%s %+v", err.Error(), details)
-			file.Error = err.Error()
-			file.Pushed = false
-			print.PrintObj(file, writer)
-			writer.Flush()
-			return nil
-		}
-
-		file.UploadError = ""
-		file.Error = ""
-		file.Pushed = true
-		file.UploadID = id
-		print.PrintObj(file, writer)
-		writer.Flush()
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (e *exportPushOptions) Run() error {
 	// TODO make timeout configurable
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-
-	if e.OverrideFile != "" {
-		return e.runFileOnly(ctx)
-	}
 
 	bundle, err := metering.NewBundle(e.currentMeteringExport.FileName)
 	if err != nil {
@@ -237,6 +176,7 @@ func (e *exportPushOptions) Run() error {
 	defer bundle.Close()
 
 	writer := printers.GetNewTabWriter(e.Out)
+	p := output.NewHumanOutput()
 
 	print, err := e.ToPrinter("pushed")
 	if err != nil {
@@ -245,15 +185,37 @@ func (e *exportPushOptions) Run() error {
 
 	print = output.NewActionCLITableOrStruct(e.PrintFlags, print)
 
-	if e.dryRun {
-		logrus.Warn(i18n.T("dry-run enabled, files will not be removed from data service"))
+	file := e.currentMeteringExport.FileName
+
+	if e.OverrideFile != "" {
+		file = e.OverrideFile
+		print = output.NewPushFileOnlyCLITableOrStruct(e.PrintFlags, print)
+	}
+
+	if e.humanOutput {
+		p.WithDetails("uploadHost", e.rhmRawConfig.MarketplaceEndpoint.Host).
+			Titlef(i18n.T("push started"))
+		p = p.Sub()
+
+		if e.dryRun {
+			p.Warnf(i18n.T("dry-run enabled; files will not be pushed"))
+		}
+
+		p.WithDetails("exportFile", file).Infof(i18n.T("pushing files status:"))
 	}
 
 	files := map[string]*dataservicev1.FileInfoCTLAction{}
-	for _, f := range e.currentMeteringExport.Files {
-		localF := f
-		files[f.Name] = localF
+
+	if e.OverrideFile == "" {
+		for _, f := range e.currentMeteringExport.Files {
+			localF := f
+			files[f.Name] = localF
+		}
 	}
+
+	errs := map[string]error{}
+	found := 0
+	pushed := 0
 
 	err = metering.WalkTar(e.currentMeteringExport.FileName, func(header *tar.Header, r io.Reader) error {
 		// skip our helper commit file
@@ -261,21 +223,39 @@ func (e *exportPushOptions) Run() error {
 			return nil
 		}
 
+		log := logger.WithValues("file", header.Name).V(5)
+
 		file := files[header.Name]
 
-		if file == nil {
-			logrus.Warnf("tar file (%s) has no info in the config file skipping", header.Name)
+		if file == nil && e.OverrideFile == "" {
+			log.Info("tar file has no info in the config file skipping", "file", header.Name)
 			return nil
 		}
 
-		if file.Pushed {
-			logrus.Debug("file has already been pushed")
-			return nil
+		if e.OverrideFile != "" {
+			// handle the case where we are just uploading from a file and have no config
+			file = &dataservicev1.FileInfoCTLAction{
+				FileInfo: &dataservicev1.FileInfo{},
+			}
+			file.Name = header.Name
+			file.Size = uint32(header.Size)
+			file.Action = "Pushed"
 		}
 
-		file.Action = "Push"
+		found = found + 1
 
-		if e.dryRun {
+		file.Action = dataservicev1.Push
+		file.Result = dataservicev1.Ok
+
+		if e.dryRun || file.Pushed {
+			if e.dryRun {
+				file.Result = dataservicev1.DryRun
+			}
+
+			if file.Pushed {
+				log.Info("file is already pushed")
+			}
+
 			print.PrintObj(file, writer)
 			writer.Flush()
 			return nil
@@ -285,8 +265,11 @@ func (e *exportPushOptions) Run() error {
 		if err != nil {
 			details := errors.GetDetails(err)
 			err = errors.Errorf("%s %+v", err.Error(), details)
+			log.Info("failed to push file", "err", err)
+			errs[file.Name] = err
 			file.Error = err.Error()
-			file.Action = "PushErr"
+			file.Action = dataservicev1.Pull
+			file.Result = dataservicev1.Error
 			file.Pushed = false
 			print.PrintObj(file, writer)
 			writer.Flush()
@@ -299,6 +282,8 @@ func (e *exportPushOptions) Run() error {
 		file.UploadID = id
 		print.PrintObj(file, writer)
 		writer.Flush()
+		pushed = pushed + 1
+		log.Info("push file success")
 		return nil
 	})
 
@@ -306,8 +291,25 @@ func (e *exportPushOptions) Run() error {
 		return err
 	}
 
+	if e.humanOutput {
+		p.WithDetails("pushed", pushed, "files", found).Infof(i18n.T("push finished"))
+
+		if len(errs) != 0 {
+			p.Errorf(nil, "errors have occurred")
+			p2 := p.Sub()
+			for name, err := range errs {
+				p2.WithDetails("name", name).Errorf(nil, err.Error())
+			}
+		}
+	}
+
 	// if on dryrun, stop before we save
 	if e.dryRun {
+		return nil
+	}
+
+	// if we're reading from an override file, don't save or compact the file
+	if e.OverrideFile != "" {
 		return nil
 	}
 
@@ -319,6 +321,5 @@ func (e *exportPushOptions) Run() error {
 	if err := config.ModifyConfig(e.rhmConfigFlags.RawPersistentConfigLoader().ConfigAccess(), *e.rhmRawConfig, true); err != nil {
 		return err
 	}
-
 	return nil
 }

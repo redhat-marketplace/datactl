@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metering
 
 import (
@@ -7,10 +21,10 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
+	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/metering"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -22,7 +36,7 @@ import (
 
 var (
 	commitLong = templates.LongDesc(i18n.T(`
-		Commits the file on the Red Hat Marketplace Dataservice.
+		Commits the file on the Dataservice.
 
 		Committing indicates that the user will be delivering the files for
 		processing by using the "{{ .cmd }} export push" command. Commiting files
@@ -119,6 +133,7 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 
 	if c.PrintFlags.OutputFormat == nil || *c.PrintFlags.OutputFormat == "wide" || *c.PrintFlags.OutputFormat == "" {
 		c.humanOutput = true
+		output.SetOutput(c.Out, true)
 		c.PrintFlags.OutputFormat = ptr.String("wide")
 	}
 
@@ -149,13 +164,35 @@ func (c *exportCommitOptions) Run() error {
 
 	print = output.NewActionCLITableOrStruct(c.PrintFlags, print)
 
+	p := output.NewHumanOutput()
+
 	if c.dryRun {
-		logrus.Info(i18n.T("dry-run enabled, files will not be removed from data service"))
+		p = p.WithDetails("dryRun", true)
 	}
 
+	if c.humanOutput {
+		p = p.WithDetails("cluster", c.currentMeteringExport.DataServiceCluster)
+		p.Titlef("%s", i18n.T("commit started"))
+
+		if c.dryRun {
+			p.Warnf(i18n.T("dry-run enabled; files will not be committed"))
+		}
+
+		p = p.Sub()
+		p.WithDetails("exportFile", c.currentMeteringExport.FileName).Infof(i18n.T("file commit status:"))
+	}
+
+	errs := map[string]error{}
+	committed := 0
+
 	for _, file := range c.currentMeteringExport.Files {
+		file.Action = dataservicev1.Commit
+		file.Result = dataservicev1.Ok
+
 		if c.dryRun || file.Committed == true {
-			file.Action = "Commit"
+			if c.dryRun {
+				file.Result = dataservicev1.DryRun
+			}
 			print.PrintObj(file, writer)
 			writer.Flush()
 			continue
@@ -163,18 +200,18 @@ func (c *exportCommitOptions) Run() error {
 
 		err := c.dataService.DeleteFile(ctx, file.Id)
 		if err != nil {
-			logrus.WithError(err).WithField("id", file.Id).Warn("failed to delete file")
 			file.Error = err.Error()
 			file.Committed = false
-			file.Action = "CommitErr"
+			file.Result = dataservicev1.Error
 			print.PrintObj(file, writer)
 			writer.Flush()
+			errs[file.Name] = err
 			continue
 		}
 
 		file.Error = ""
-		file.Action = "Commit"
 		file.Committed = true
+		committed = committed + 1
 		print.PrintObj(file, writer)
 		writer.Flush()
 	}
@@ -190,6 +227,18 @@ func (c *exportCommitOptions) Run() error {
 	}
 
 	writer.Flush()
+
+	if c.humanOutput {
+		p.WithDetails("committed", committed, "files", len(c.currentMeteringExport.Files)).Infof(i18n.T("commit finished"))
+
+		if len(errs) != 0 {
+			p.Errorf(nil, "errors have occurred")
+			p2 := p.Sub()
+			for name, err := range errs {
+				p2.WithDetails("name", name).Errorf(nil, err.Error())
+			}
+		}
+	}
 
 	// if dryRun, stop early
 	if c.dryRun {

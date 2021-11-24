@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package serviceaccount
 
 import (
@@ -5,11 +19,11 @@ import (
 	"sync"
 
 	"github.com/gotidy/ptr"
-	"github.com/sirupsen/logrus"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog/v2"
 )
 
 type ServiceAccountClient struct {
@@ -34,12 +48,12 @@ func (s *ServiceAccountClient) NewServiceAccountToken(targetServiceAccountName s
 	tr := s.newTokenRequest(audience, expireSecs)
 
 	if s.Token == nil {
-		logrus.Debug("auth token from service account not found")
+		klog.V(5).Info("auth token from service account not found")
 		return s.getToken(targetServiceAccountName, s.Client, tr, opts)
 	}
 
 	if now.UTC().After(s.Token.ExpirationTimestamp.Time) {
-		logrus.Debug("service account token is expired")
+		klog.V(5).Info("service account token is expired")
 		return s.getToken(targetServiceAccountName, s.Client, tr, opts)
 	}
 
@@ -72,7 +86,7 @@ func (s *ServiceAccountClient) newTokenRequest(audience string, expireSeconds in
 func (s *ServiceAccountClient) getToken(targetServiceAccount string, client typedv1.ServiceAccountInterface, tr *authv1.TokenRequest, opts metav1.CreateOptions) (string, metav1.Time, error) {
 	tr, err := client.CreateToken(context.TODO(), targetServiceAccount, tr, opts)
 	if err != nil {
-		return "", metav1.Now(), nil
+		return "", metav1.Now(), err
 	}
 
 	s.Token = &Token{

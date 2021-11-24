@@ -1,12 +1,17 @@
 before:
   hooks:
     - go mod tidy
+    - find . -type f -name "*.go" | xargs addlicense -c "IBM Corporation."
 env:
   - CGO_ENABLED=0
 builds:
   - id: datactl
     main: ./cmd/datactl
     binary: datactl
+    flags:
+      - -tags=prod
+    hooks:
+      pre: sh -c "echo 'version={{ .Version }} sha={{ .ShortCommit }} date={{ .Date }}' > ./cmd/datactl/app/version.txt"
     targets:
       - linux_amd64
       - linux_s390x
@@ -18,6 +23,10 @@ builds:
   - id: oc-datactl
     main: ./cmd/datactl
     binary: oc-datactl
+    flags:
+      - -tags=prod
+    hooks:
+      pre: sh -c "echo 'version={{ .Version }} sha={{ .ShortCommit }} date={{ .Date }}' > ./cmd/datactl/app/version.txt"
     targets:
       - linux_amd64
       - linux_s390x
@@ -37,7 +46,14 @@ archives:
     builds:
       - datactl
       - oc-datactl
-    format: tar
+    format: tar.gz
+    files:
+      - LICENSE
+      - src: './docs/*.md'
+        dst: docs
+        strip_parent: true
+      - src: './hack/service-account-role.yaml'
+        strip_parent: true
 checksum:
   name_template: 'checksums.txt'
 snapshot:

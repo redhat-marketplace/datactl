@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package config
 
 import (
@@ -199,7 +213,8 @@ func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataSe
 
 		// TODO make this paramaterized
 		token, expires, err := sa.NewServiceAccountToken(dsConfig.ServiceAccount, "rhm-data-service.openshift-redhat-marketplace.svc", 3600)
-		if err != nil {
+		if err != nil || token == "" {
+			logger.Info("failed to get service account token", "err", err)
 			return nil, err
 		}
 
@@ -210,6 +225,7 @@ func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataSe
 	ds, err := clients.ProvideDataService(dsConfig)
 
 	if err != nil {
+		logger.Info("failed to get dataservice", "err", err)
 		return nil, err
 	}
 

@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package marketplace
 
 import (
@@ -14,9 +28,14 @@ import (
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog/v2/klogr"
+)
+
+var (
+	logger logr.Logger = klogr.New().V(5)
 )
 
 type MarketplaceUsageResponseDetails struct {
@@ -73,14 +92,6 @@ func (r *marketplaceMetricClient) Status(ctx context.Context, id string) (*Marke
 		return nil, err
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"statusCode": resp.StatusCode,
-		"url":        url,
-		"proto":      resp.Proto,
-		"body":       string(data),
-		"headers":    resp.Header,
-	}).Debug("retrieved response")
-
 	status := MarketplaceUsageResponse{}
 	jsonErr := json.Unmarshal(data, &status)
 
@@ -107,6 +118,13 @@ func isRetryable(err error) bool {
 }
 
 func checkError(resp *http.Response, status MarketplaceUsageResponse, message string) error {
+	logger.Info("retrieved response",
+		"statusCode", resp.StatusCode,
+		"proto", resp.Proto,
+		"status", status,
+		"headers", resp.Header,
+	)
+
 	if resp.StatusCode < 300 && resp.StatusCode >= 200 {
 		return nil
 	}
@@ -168,7 +186,7 @@ func (r *marketplaceMetricClient) uploadFile(ctx context.Context, form []byte, f
 	// Perform the request
 	resp, err := r.client.Do(req)
 	if err != nil {
-		logrus.WithField("err", err).Error("failed to post")
+		logger.Info("failed to post", "err", err)
 		return "", errors.Wrap(err, "failed to post")
 	}
 
@@ -178,14 +196,6 @@ func (r *marketplaceMetricClient) uploadFile(ctx context.Context, form []byte, f
 	if err != nil {
 		return "", errors.Wrap(err, "failed to read response body")
 	}
-
-	logrus.WithFields(logrus.Fields{
-		"statusCode": resp.StatusCode,
-		"url":        req.URL,
-		"proto":      resp.Proto,
-		"body":       string(body),
-		"headers":    resp.Header,
-	}).Debug("retrieved response")
 
 	status := MarketplaceUsageResponse{}
 	jsonErr := json.Unmarshal(body, &status)
@@ -274,7 +284,7 @@ func (r *marketplaceMetricClient) Upload(ctx context.Context, fileName string, r
 			})
 
 			if err != nil {
-				logrus.WithField("err", err).Error("failed to get status")
+				logger.Info("failed to get status", "err", err)
 			}
 
 			if resp.Status == MktplStatusSuccess {

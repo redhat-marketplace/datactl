@@ -1,6 +1,21 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package v1
 
 import (
+	"github.com/fatih/color"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -55,13 +70,16 @@ type FileInfoCTLAction struct {
 	*FileInfo `json:",inline"`
 
 	// +optional
-	Action string `json:"action,omitempty"`
+	Action `json:"action,omitempty"`
 
 	// +optional
-	UploadID string `protobuf:"-" json:"uploadID,omitempty"`
+	Result `json:"lastActionResult,omitempty"`
 
 	// +optional
 	Error string `protobuf:"-" json:"error,omitempty"`
+
+	// +optional
+	UploadID string `protobuf:"-" json:"uploadID,omitempty"`
 
 	// +optional
 	UploadError string `protobuf:"-" json:"uploadError,omitempty"`
@@ -81,5 +99,72 @@ func NewFileInfoCTLAction(info *FileInfo) *FileInfoCTLAction {
 
 	return &FileInfoCTLAction{
 		FileInfo: info,
+	}
+}
+
+type Result string
+
+const (
+	Ok     Result = "Ok"
+	Error  Result = "Err"
+	DryRun Result = "DryRun"
+)
+
+var (
+	red    = color.New(color.FgRed)
+	green  = color.New(color.FgGreen)
+	yellow = color.New(color.FgYellow)
+)
+
+func (a Result) MarshalText() ([]byte, error) {
+	switch a {
+	case Ok:
+		return []byte(green.Sprint(a)), nil
+	case Error:
+		return []byte(red.Sprint(a)), nil
+	case DryRun:
+		return []byte(yellow.Sprint(a)), nil
+	default:
+		return []byte(string(a)), nil
+	}
+}
+
+func (a *Result) UnmarshalText(text []byte) error {
+	*a = Result(string(text))
+
+	switch *a {
+	case Ok:
+		fallthrough
+	case Error:
+		return nil
+	default:
+		return nil
+	}
+}
+
+type Action string
+
+const (
+	Pull   Action = "Pull"
+	Push   Action = "Push"
+	Commit Action = "Commit"
+)
+
+func (a Action) MarshalText() ([]byte, error) {
+	return []byte(string(a)), nil
+}
+
+func (a *Action) UnmarshalText(text []byte) error {
+	*a = Action(string(text))
+
+	switch *a {
+	case Commit:
+		fallthrough
+	case Pull:
+		fallthrough
+	case Push:
+		return nil
+	default:
+		return nil
 	}
 }
