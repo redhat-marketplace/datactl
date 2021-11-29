@@ -59,9 +59,14 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 Recommended approach is to run the commands in this order:
 
 ```sh
+// Must be logged in to the cluster
 oc datactl export pull
-oc datactl export commit
+
+// If you're in a connect
 oc datactl export push
+
+// If no errors from push.
+oc datactl export commit
 ```
 
 Let's break down what each one is doing.
@@ -71,14 +76,15 @@ Let's break down what each one is doing.
 - Pulls files from data service and stores them in a tar file under your `~/.datactl/data` folder.
 - Writes the status of the files found in `~/.datactl/config`
 
-`oc datactl export commit`
-
-- Commits the files to the dataservice.
-- At this point you're telling the data service that you've retrieved these files and will submit them to Red Hat Marketplace.
-- After some time, the files in dataservice will be cleaned up to save space.
-
 `oc datactl export push`
 
 - Pushes the files pulled to Red Hat Marketplace.
+- If this process errors, do not commit. Retry the export push or open a support ticket.
+
+`oc datactl export commit`
+
+- Commits the files to the dataservice.
+- At this point you're telling the data service that you've retrieved these files and have or will submit them to Red Hat Marketplace.
+- After some time, the files in dataservice will be cleaned up to save space.
 
 If you want to transfer it somewhere else, you can find the tar file under your `~/.datactl/data/` directory.
