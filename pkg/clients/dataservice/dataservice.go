@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dataservice
 
 import (
@@ -11,13 +25,18 @@ import (
 	"time"
 
 	"emperror.dev/errors"
+	"github.com/go-logr/logr"
 	"github.com/redhat-marketplace/datactl/pkg/clients/shared"
 	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/api/latest"
 	clientcmdlatest "github.com/redhat-marketplace/datactl/pkg/datactl/api/latest"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
+)
+
+var (
+	logger logr.Logger = klogr.New().V(5).WithName("pkg/clients/dataservice")
 )
 
 type DataServiceConfig struct {
@@ -73,7 +92,7 @@ type ListOptions struct {
 func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, files *dataservicev1.ListFilesResponse) error {
 	req, err := d.req.ListFiles(ctx)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get request")
+		logger.Info("failed to get request", "err", err)
 		return err
 	}
 
@@ -116,19 +135,16 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	req.URL.RawQuery = q.Encode()
 
-	klog.V(5).Info("url is "+req.URL.String(), " ", req.URL.RawQuery)
+	klog.V(5).Infof("url: %s, rawQuery: %s", req.URL.String(), " ", req.URL.RawQuery)
 
 	resp, err := d.Do(req)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get response")
+		klog.V(5).Infof("failed to get response: %v", err)
 		return err
 	}
 
 	err = d.checkResponse("ListFiles", resp)
 	if err != nil {
-		logrus.WithField("statusCode", resp.StatusCode).
-			WithError(err).
-			Error("failed response")
 		return err
 	}
 
@@ -136,14 +152,14 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.WithError(err).Error("failed to read body")
+		klog.V(5).Infof("failed to ready body %v", err)
 	}
 
 	listResponse := &dataservicev1.ListFilesResponse{}
 
 	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: latest.Version, Group: latest.Group, Kind: "ListFilesResponse"}, listResponse)
 	if err != nil {
-		logrus.WithError(err).Error("failed to decode response")
+		klog.V(5).Infof("json decode failed err %v", err)
 		return err
 	}
 
@@ -154,7 +170,6 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 func (d *dataServiceClient) GetFileById(ctx context.Context, id string, finfo *dataservicev1.FileInfo) (err error) {
 	req, err := d.req.GetFileByID(ctx, id)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get request")
 		return err
 	}
 	return d.getFile(req, finfo)
@@ -163,7 +178,6 @@ func (d *dataServiceClient) GetFileById(ctx context.Context, id string, finfo *d
 func (d *dataServiceClient) GetFileByName(ctx context.Context, name, source, sourceType string, finfo *dataservicev1.FileInfo) (err error) {
 	req, err := d.req.GetFileByName(ctx, name, source, sourceType)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get request")
 		return err
 	}
 
@@ -171,25 +185,23 @@ func (d *dataServiceClient) GetFileByName(ctx context.Context, name, source, sou
 }
 
 func (d *dataServiceClient) DownloadFile(ctx context.Context, id string, w io.Writer) (checksum string, err error) {
-	log := logrus.WithField("id", id)
+	log := logger.WithValues("id", id)
 
 	req, err := d.req.DownloadFile(ctx, id)
 	if err != nil {
-		log.WithError(err).Error("failed to get request")
+		log.Error(err, "failed to get request")
 		return "", err
 	}
 
 	resp, err := d.Do(req)
 	if err != nil {
-		log.WithError(err).Error("failed to get request")
+		log.Error(err, "failed to run request")
 		return "", err
 	}
 
 	err = d.checkResponse("DownloadFile", resp)
 	if err != nil {
-		log.WithField("statusCode", resp.StatusCode).
-			WithError(err).
-			Error("failed response")
+		log.Error(err, "response failed")
 		return "", err
 	}
 
@@ -210,31 +222,28 @@ func (d *dataServiceClient) DownloadFile(ctx context.Context, id string, w io.Wr
 				break
 			}
 
-			log.WithError(err).Error("failed to read file")
+			log.Error(err, "failed to read file")
 			return "", err
 		}
 
 		nAll = nAll + n
 	}
 
-	// TODO: add header check for checksum; should match
 	checksum = fmt.Sprintf("%x", sha.Sum(nil))
-	log.WithField("checksum", checksum).Debug("checksum calculated")
-
 	return checksum, nil
 }
 
 func (d *dataServiceClient) getFile(req *http.Request, finfo *dataservicev1.FileInfo) (err error) {
 	resp, err := d.Do(req)
 	if err != nil {
-		logrus.WithError(err).Error("failed to get request")
+		logger.Info("failed to get request", "err", err)
 		return err
 	}
 
 	var body []byte
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.WithError(err).Error("failed to read body")
+		logger.Info("failed to read body", "err", err)
 	}
 
 	err = d.checkResponse("getFile", resp)
@@ -246,7 +255,7 @@ func (d *dataServiceClient) getFile(req *http.Request, finfo *dataservicev1.File
 
 	decoded, _, err := clientcmdlatest.Codec.Decode(body, &schema.GroupVersionKind{Version: clientcmdlatest.Version, Group: clientcmdlatest.Group, Kind: ""}, getResponse)
 	if err != nil {
-		logrus.WithError(err).Error("failed to decode response")
+		logger.Info("failed to decode response", "err", err)
 		return err
 	}
 
@@ -255,38 +264,35 @@ func (d *dataServiceClient) getFile(req *http.Request, finfo *dataservicev1.File
 }
 
 func (d *dataServiceClient) DeleteFile(ctx context.Context, id string) error {
-	log := logrus.WithField("id", id)
+	log := logger.WithValues("id", id)
 
 	req, err := d.req.DeleteFile(ctx, id)
 	if err != nil {
-		log.WithError(err).Error("failed to get request")
+		logger.Info("failed to get request", "err", err)
 		return err
 	}
 	resp, err := d.Do(req)
 	if err != nil {
-		log.WithError(err).Error("failed to get request")
+		logger.Info("failed to get request", "err", err)
 		return err
 	}
 	err = d.checkResponse("DeleteFile", resp)
 	if err != nil {
-		log.WithField("statusCode", resp.StatusCode).
-			WithError(err).
-			Error("failed response")
+		log.Error(err, "failed response", "statusCode", resp.StatusCode)
 		return err
 	}
 
-	log.Debug("deleted file")
+	log.Info("deleted file")
 	return nil
 }
 
 func (d *dataServiceClient) checkResponse(function string, resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		logrus.WithFields(logrus.Fields{
-			"function":   function,
-			"statusCode": resp.StatusCode,
-			"body":       string(body),
-		}).Error("failed response")
+		logger.Info("response",
+			"func", function,
+			"statusCode", resp.StatusCode,
+			"body", string(body))
 		return errors.NewWithDetails("failed request", "status", resp.StatusCode, "body", string(body))
 	}
 

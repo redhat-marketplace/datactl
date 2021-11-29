@@ -27,7 +27,7 @@ call `oc datactl`
 
 ### As a standalone tool
 
-Datactl tool can be used standalone. Just move datactl to your path and use `datactl`.
+Datactl tool can be used standalone. Just move oc-datactl to your path and use `oc-datactl` directly.
 
 ## Getting started
 
@@ -49,7 +49,7 @@ Datactl tool can be used standalone. Just move datactl to your path and use `dat
    namespace. The datactl tool will use these by default.
 
    ```sh
-   oc apply -f service-account-role.yaml // file found in release
+   oc apply -f resources/service-account-role.yaml // file found in release
    ```
 
 5. Now you're configured. You can start using the export commands.
@@ -59,9 +59,14 @@ Datactl tool can be used standalone. Just move datactl to your path and use `dat
 Recommended approach is to run the commands in this order:
 
 ```sh
+// Must be logged in to the cluster
 oc datactl export pull
-oc datactl export commit
+
+// If you're in a connect
 oc datactl export push
+
+// If no errors from push.
+oc datactl export commit
 ```
 
 Let's break down what each one is doing.
@@ -71,14 +76,15 @@ Let's break down what each one is doing.
 - Pulls files from data service and stores them in a tar file under your `~/.datactl/data` folder.
 - Writes the status of the files found in `~/.datactl/config`
 
-`oc datactl export commit`
-
-- Commits the files to the dataservice.
-- At this point you're telling the data service that you've retrieved these files and will submit them to Red Hat Marketplace.
-- After some time, the files in dataservice will be cleaned up to save space.
-
 `oc datactl export push`
 
 - Pushes the files pulled to Red Hat Marketplace.
+- If this process errors, do not commit. Retry the export push or open a support ticket.
+
+`oc datactl export commit`
+
+- Commits the files to the dataservice.
+- At this point you're telling the data service that you've retrieved these files and have or will submit them to Red Hat Marketplace.
+- After some time, the files in dataservice will be cleaned up to save space.
 
 If you want to transfer it somewhere else, you can find the tar file under your `~/.datactl/data/` directory.

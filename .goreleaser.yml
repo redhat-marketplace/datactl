@@ -1,31 +1,47 @@
 before:
   hooks:
     - go mod tidy
+    - find . -type f -name "*.go" | xargs addlicense -c "IBM Corporation."
 env:
   - CGO_ENABLED=0
 builds:
   - id: datactl
     main: ./cmd/datactl
-    binary: datactl
-    targets:
-      - linux_amd64
-      - linux_s390x
-      - linux_arm64
-      - linux_ppc64le
-      - darwin_amd64
-      - darwin_arm64
-      - windows_amd64
-  - id: oc-datactl
+    binary: oc-datactl
+    flags:
+      - -tags=prod
+    hooks:
+      pre: sh -c "echo 'version={{ .Version }} sha={{ .ShortCommit }} date={{ .Date }}' > ./cmd/datactl/app/version.txt"
+    goos:
+      - darwin
+      - windows
+    goarch:
+      - amd64
+  - id: datactl-arm64
     main: ./cmd/datactl
     binary: oc-datactl
-    targets:
-      - linux_amd64
-      - linux_s390x
-      - linux_arm64
-      - linux_ppc64le
-      - darwin_amd64
-      - darwin_arm64
-      - windows_amd64
+    flags:
+      - -tags=prod
+    hooks:
+      pre: sh -c "echo 'version={{ .Version }} sha={{ .ShortCommit }} date={{ .Date }}' > ./cmd/datactl/app/version.txt"
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - arm64
+  - id: datactl-otherarch
+    main: ./cmd/datactl
+    binary: oc-datactl
+    flags:
+      - -tags=prod
+    hooks:
+      pre: sh -c "echo 'version={{ .Version }} sha={{ .ShortCommit }} date={{ .Date }}' > ./cmd/datactl/app/version.txt"
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - s390x
+      - ppc64le
 archives:
   - id: tar
     name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
@@ -35,9 +51,18 @@ archives:
       linux: Linux
       windows: Windows
     builds:
-      - datactl
-      - oc-datactl
-    format: tar
+      - datactl-amd64
+      - datactl-arm64
+      - datactl-otherarch
+    format: tar.gz
+    files:
+      - LICENSE
+      - src: './docs/*.md'
+        dst: docs
+        strip_parent: true
+      - src: './hack/service-account-role.yaml'
+        dst: resources
+        strip_parent: true
 checksum:
   name_template: 'checksums.txt'
 snapshot:

@@ -1,8 +1,21 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metering
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"emperror.dev/errors"
@@ -25,7 +38,7 @@ import (
 
 var (
 	pullLong = templates.LongDesc(i18n.T(`
-		Pulls files from the Red Hat Marketplace Dataservice on the cluster.
+		Pulls files from the Dataservice on the cluster.
 
 		Prints a table of the files pulled with basic information. The --before or --after flags
 		can be used to change the date range that the files are pulled from. All dates must be in
@@ -60,7 +73,7 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	cmd := &cobra.Command{
 		Use:                   "pull [(--before DATE) (--after DATE) (--include-deleted)]",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Pulls files from RHM Operator"),
+		Short:                 i18n.T("Pulls files from Dataservice Operator"),
 		Long:                  output.ReplaceCommandStrings(pullLong),
 		Example:               output.ReplaceCommandStrings(pullExample),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -144,6 +157,8 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	if e.PrintFlags.OutputFormat == nil || *e.PrintFlags.OutputFormat == "wide" || *e.PrintFlags.OutputFormat == "" {
 		e.humanOutput = true
 		e.PrintFlags.OutputFormat = ptr.String("wide")
+	} else {
+		output.DisableColor()
 	}
 
 	if e.beforeDate != "" {
@@ -187,11 +202,17 @@ func (e *exportPullOptions) Run() error {
 		AfterDate:      e.afterDateT,
 	}
 
-	// TODO: do we care or just reset the flag?
-	// if exportInfo.Committed == true {}
-
 	if e.currentMeteringExport.Files == nil {
 		e.currentMeteringExport.Files = make([]*dataservicev1.FileInfoCTLAction, 0)
+	}
+
+	p := output.NewHumanOutput()
+
+	if e.humanOutput {
+		p.WithDetails("cluster", e.currentMeteringExport.DataServiceCluster).
+			Titlef("%s", i18n.T("pull started"))
+		p = p.Sub()
+		p.WithDetails("exportFile", e.currentMeteringExport.FileName).Infof(i18n.T("files pulled status:"))
 	}
 
 	writer := printers.GetNewTabWriter(e.Out)
@@ -204,6 +225,7 @@ func (e *exportPullOptions) Run() error {
 	print = output.NewActionCLITableOrStruct(e.PrintFlags, print)
 
 	files := []*dataservicev1.FileInfoCTLAction{}
+	errs := map[string]error{}
 	found := 0
 	pulled := 0
 
@@ -226,15 +248,18 @@ func (e *exportPullOptions) Run() error {
 
 			_, err = e.dataService.DownloadFile(ctx, cliFile.Id, w)
 			if err != nil {
-				cliFile.Action = "Error"
+				cliFile.Action = dataservicev1.Pull
+				cliFile.Result = dataservicev1.Error
 				cliFile.Error = err.Error()
+				errs[cliFile.Name] = err
 
 				print.PrintObj(cliFile, writer)
 				writer.Flush()
 				continue
 			}
 
-			cliFile.Action = "Pulled"
+			cliFile.Action = dataservicev1.Pull
+			cliFile.Result = dataservicev1.Ok
 			pulled = pulled + 1
 			print.PrintObj(cliFile, writer)
 			writer.Flush()
@@ -290,8 +315,15 @@ func (e *exportPullOptions) Run() error {
 	}
 
 	if e.humanOutput {
-		fmt.Fprintf(e.Out, "\n%d %s %s %d %s\n", pulled, i18n.T("pulled"), i18n.T("of"), found, i18n.T("found"))
-		fmt.Fprintf(e.Out, "%s %s\n", i18n.T("pull complete, files saved to"), e.bundle.Name())
+		p.WithDetails("found", found, "pulled", pulled).Infof(i18n.T("pull complete"))
+
+		if len(errs) != 0 {
+			p.Errorf(nil, "errors have occurred")
+			p2 := p.Sub()
+			for name, err := range errs {
+				p2.WithDetails("name", name).Errorf(nil, err.Error())
+			}
+		}
 	}
 
 	return nil

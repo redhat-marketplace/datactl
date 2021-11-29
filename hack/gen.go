@@ -12,4 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package factory
+//go:generate go run ./generate-docs.go ../docs
+
+package main

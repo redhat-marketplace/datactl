@@ -1,3 +1,17 @@
+// Copyright 2021 IBM Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package shared
 
 import (
@@ -5,8 +19,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/httpstream/spdy"
+	"k8s.io/klog/v2/klogr"
+)
+
+var (
+	logger logr.Logger = klogr.New().V(5).WithName("pkg/clients/shared")
 )
 
 type RoundTripperConfig spdy.RoundTripperConfig
@@ -36,8 +55,7 @@ type withHeader struct {
 
 func WithBearerAuth(token string) RoundTripperOptions {
 	if token == "" {
-		// TODO replaces with klog
-		logrus.Warn("bearer token is empty")
+		logger.WithCallDepth(1).Info("bearer token is empty")
 		return func(rt http.RoundTripper) http.RoundTripper {
 			return rt
 		}

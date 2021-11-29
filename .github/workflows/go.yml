@@ -42,6 +42,5 @@ jobs:
         if: github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v2
         with:
-          name: dist-without-markdown
-          path: |
-            dist
+          name: dist
+          path: dist/**/*.tar.gz
