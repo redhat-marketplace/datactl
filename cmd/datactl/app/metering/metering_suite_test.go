@@ -25,5 +25,5 @@ import (
 func TestMetering(t *testing.T) {
 	klog.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Metering Suite")
+	RunSpecs(t, "Metering CMD Suite")
 }

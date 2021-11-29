@@ -35,13 +35,8 @@ func NewCmdExport(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams gen
 	cmd := &cobra.Command{
 		Use:                   "export",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Export metrics from RHM Operator"),
-		// Long:                  imageLong,
-		// Example:               imageExample,
+		Short:                 i18n.T("Export metrics from Dataservice Operator"),
 		Run: func(cmd *cobra.Command, args []string) {
-			// cmdutil.CheckErr(o.Complete(f, cmd, args))
-			// cmdutil.CheckErr(o.Validate())
-			// cmdutil.CheckErr(o.Run())
 			cmd.Help()
 		},
 	}

@@ -133,8 +133,9 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 
 	if c.PrintFlags.OutputFormat == nil || *c.PrintFlags.OutputFormat == "wide" || *c.PrintFlags.OutputFormat == "" {
 		c.humanOutput = true
-		output.SetOutput(c.Out, true)
 		c.PrintFlags.OutputFormat = ptr.String("wide")
+	} else {
+		output.DisableColor()
 	}
 
 	return nil

@@ -21,6 +21,8 @@ import (
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
 	"github.com/fatih/color"
+	"github.com/spf13/pflag"
+	"k8s.io/kubectl/pkg/util/i18n"
 )
 
 type Padding int
@@ -28,6 +30,10 @@ type Padding int
 const DefaultInitialPadding = 0
 
 const ExtraPadding = DefaultInitialPadding + 3
+
+func AddFlags(pf *pflag.FlagSet) {
+	pf.BoolVar(&color.NoColor, "no-color", false, i18n.T("no color on CLI output"))
+}
 
 func Print(padding Padding, title string) {
 	defer func() {
@@ -37,10 +43,24 @@ func Print(padding Padding, title string) {
 	log.Infof(color.New(color.Bold).Sprint(title))
 }
 
-func SetOutput(w io.Writer, isUserFriendly bool) {
-	color.NoColor = !isUserFriendly
+func EnableColor() {
+	color.NoColor = false
+}
+
+func DisableColor() {
+	color.NoColor = false
+}
+
+func SetOutput(w io.Writer) {
 	log.SetHandler(cli.Default)
 	cli.Default.Writer = w
+	cli.Strings = [...]string{
+		log.DebugLevel: "*",
+		log.InfoLevel:  "*",
+		log.WarnLevel:  "*",
+		log.ErrorLevel: "x",
+		log.FatalLevel: "x",
+	}
 }
 
 type HumanOutput struct {

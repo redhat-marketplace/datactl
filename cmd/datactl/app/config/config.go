@@ -33,29 +33,17 @@ var (
 )
 
 func NewCmdConfig(rhmFlags *config.ConfigFlags, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	// pathOptions := config.NewDefaultClientConfigLoadingRules()
-
-	// if len(pathOptions.ExplicitFile) == 0 {
-	// 	pathOptions.ExplicitFile = config.RecommendedFileName
-	// }
-
 	cmd := &cobra.Command{
 		Use:                   "config SUBCOMMAND",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Modify datactl files"),
-		Long: templates.LongDesc(i18n.T(`
-			The loading order follows these rules:
-
-			1. If the --`) + config.RecommendedConfigPathFlag + i18n.T(` flag is set, then only that file is loaded. The flag may only be set once and no merging takes place.
-
-			2. If $`) + config.RecommendedConfigPathEnvVar + i18n.T(` environment variable is set, then it is used as a list of paths (normal path delimiting rules for your system). These paths are merged. When a value is modified, it is modified in the file that defines the stanza. When a value is created, it is created in the first file that exists. If no files in the chain exist, then it creates the last file in the list.
-
-		3. Otherwise, `) + path.Join("${HOME}", config.RecommendedHomeDir, config.RecommendedFileName) + i18n.T(` is used and no merging takes place.`)),
-		Run: cmdutil.DefaultSubCommandRun(streams.ErrOut),
+		Short:                 i18n.T("Modify datactl configuration"),
+		Long:                  templates.LongDesc(i18n.T(`The file at `) + path.Join("${HOME}", config.RecommendedHomeDir, config.RecommendedFileName) + i18n.T(` is used for configuration.`)),
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
 	}
 
 	cmd.AddCommand(NewCmdConfigInit(rhmFlags, f, streams))
-
 	return cmd
 }
 

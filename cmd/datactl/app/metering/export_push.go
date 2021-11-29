@@ -54,7 +54,7 @@ var (
 		# Run the push but perform no actions (dry-run).
 		{{ .cmd }} export push --dry-run
 
-		# Push a specific datactl file
+		# Push a specific {{ .cmd }} file
 		{{ .cmd }} export push --file={{ .defaultDataPath }}/rhm-upload-20211111T000959Z.tar
 `))
 )
@@ -147,8 +147,9 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 
 	if e.PrintFlags.OutputFormat == nil || *e.PrintFlags.OutputFormat == "wide" || *e.PrintFlags.OutputFormat == "" {
 		e.humanOutput = true
-		output.SetOutput(e.Out, true)
 		e.PrintFlags.OutputFormat = ptr.String("wide")
+	} else {
+		output.DisableColor()
 	}
 
 	return nil

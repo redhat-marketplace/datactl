@@ -73,7 +73,7 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	cmd := &cobra.Command{
 		Use:                   "pull [(--before DATE) (--after DATE) (--include-deleted)]",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Pulls files from RHM Operator"),
+		Short:                 i18n.T("Pulls files from Dataservice Operator"),
 		Long:                  output.ReplaceCommandStrings(pullLong),
 		Example:               output.ReplaceCommandStrings(pullExample),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -156,8 +156,9 @@ func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 
 	if e.PrintFlags.OutputFormat == nil || *e.PrintFlags.OutputFormat == "wide" || *e.PrintFlags.OutputFormat == "" {
 		e.humanOutput = true
-		output.SetOutput(e.Out, true)
 		e.PrintFlags.OutputFormat = ptr.String("wide")
+	} else {
+		output.DisableColor()
 	}
 
 	if e.beforeDate != "" {

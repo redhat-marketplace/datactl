@@ -37,14 +37,14 @@ func CommandName() string {
 }
 
 var (
-	recommendedConfigDir  = filepath.Join("$HOME", config.RecommendedHomeDir)
-	recommendedHomeFile   = filepath.Join(recommendedConfigDir, config.RecommendedFileName)
-	recommendedSchemaFile = filepath.Join(recommendedConfigDir, config.RecommendedSchemaName)
+	recommendedConfigDir = filepath.Join("$HOME", config.RecommendedHomeDir)
+	recommendedHomeFile  = filepath.Join(recommendedConfigDir, config.RecommendedFileName)
+	recommendedDataFile  = filepath.Join(recommendedConfigDir, config.RecommendedDataName)
 
 	replaceVals = map[string]interface{}{
 		"cmd":               CommandName(),
 		"defaultConfigFile": recommendedHomeFile,
-		"defaultDataPath":   recommendedSchemaFile,
+		"defaultDataPath":   recommendedDataFile,
 	}
 )
 

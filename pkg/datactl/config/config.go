@@ -52,6 +52,7 @@ const (
 	RecommendedHomeDir          = ".datactl"
 	RecommendedFileName         = "config"
 	RecommendedSchemaName       = "schema"
+	RecommendedDataName         = "data"
 )
 
 var (
@@ -59,7 +60,7 @@ var (
 	RecommendedHomeFile   = filepath.Join(RecommendedConfigDir, RecommendedFileName)
 	RecommendedSchemaFile = filepath.Join(RecommendedConfigDir, RecommendedSchemaName)
 
-	RecommendedDataDir = filepath.Join(RecommendedConfigDir, "data")
+	RecommendedDataDir = filepath.Join(RecommendedConfigDir, RecommendedDataName)
 )
 
 var (
