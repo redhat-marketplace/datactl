@@ -51,7 +51,7 @@ archives:
       linux: Linux
       windows: Windows
     builds:
-      - datactl-amd64
+      - datactl
       - datactl-arm64
       - datactl-otherarch
     format: tar.gz
