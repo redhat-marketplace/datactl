@@ -27,7 +27,7 @@ call `oc datactl`
 
 ### As a standalone tool
 
-Datactl tool can be used standalone. Just move datactl to your path and use `datactl`.
+Datactl tool can be used standalone. Just move oc-datactl to your path and use `oc-datactl` directly.
 
 ## Getting started
 
@@ -49,7 +49,7 @@ Datactl tool can be used standalone. Just move datactl to your path and use `dat
    namespace. The datactl tool will use these by default.
 
    ```sh
-   oc apply -f service-account-role.yaml // file found in release
+   oc apply -f resources/service-account-role.yaml // file found in release
    ```
 
 5. Now you're configured. You can start using the export commands.
