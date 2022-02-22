@@ -40,6 +40,25 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
    ```sh
    oc datactl config init
    ```
+   *Note*: 
+   If you are using an IBM Entitlement Key to authenticate to Redhat Marketplace use the token in the password field of your entitlement key as API Secret when prompted.
+   ```sh
+   oc project openshift-redhat-marketplace
+   kubectl get secret ibm-entitlement-key -o go-template='{{ $dc := index .data ".dockerconfigjson"|base64decode }}{{$dc}}' | grep -e "password"
+   ```
+
+   Or using `jq`
+   For a prod entitlement key:
+   ```sh
+   oc project openshift-redhat-marketplace
+   kubectl get secret ibm-entitlement-key -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."cp.icr.io".password' 
+   ```
+
+   For a stage entitlement key:
+   ```sh
+   oc project openshift-redhat-marketplace
+   kubectl get secret ibm-entitlement-key -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."stg.icr.io".password' 
+   ```
 
    This will create the default configuration on your home directory. `~/.datactl/config`
 
