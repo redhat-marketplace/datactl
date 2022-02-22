@@ -41,23 +41,21 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
    oc datactl config init
    ```
    *Note*: 
-   If you are using an IBM Entitlement Key to authenticate to Redhat Marketplace use the token in the password field of your entitlement key as API Secret when prompted.
+   Note: If you are using an IBM Entitlement Key instead of a Redhat Marketplace Pull Secret to authenticate to Redhat Marketplace, use the token in the password field of your entitlement key as the API Secret when prompted. The token can be retrieved from the on-cluster secret `ibm-entitlement-key` as follows:
+
    ```sh
-   oc project openshift-redhat-marketplace
-   kubectl get secret ibm-entitlement-key -o go-template='{{ $dc := index .data ".dockerconfigjson"|base64decode }}{{$dc}}' | grep -e "password"
+   kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -o go-template='{{ $dc := index .data ".dockerconfigjson"|base64decode }}{{$dc}}' | grep -e "password"
    ```
 
    Or using `jq`
    For a prod entitlement key:
    ```sh
-   oc project openshift-redhat-marketplace
-   kubectl get secret ibm-entitlement-key -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."cp.icr.io".password' 
+   kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."cp.icr.io".password' 
    ```
 
    For a stage entitlement key:
    ```sh
-   oc project openshift-redhat-marketplace
-   kubectl get secret ibm-entitlement-key -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."stg.icr.io".password' 
+   kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."stg.icr.io".password' 
    ```
 
    This will create the default configuration on your home directory. `~/.datactl/config`
