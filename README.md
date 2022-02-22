@@ -51,6 +51,7 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
    ```
 
    Or using `jq`
+   
    For a prod entitlement key:
    ```sh
    kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."cp.icr.io".password' 
