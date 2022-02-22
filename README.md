@@ -40,8 +40,11 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
    ```sh
    oc datactl config init
    ```
-   *Note*: 
-   Note: If you are using an IBM Entitlement Key instead of a Redhat Marketplace Pull Secret to authenticate to Redhat Marketplace, use the token in the password field of your entitlement key as the API Secret when prompted. The token can be retrieved from the on-cluster secret `ibm-entitlement-key` as follows:
+
+   This will create the default configuration on your home directory. `~/.datactl/config`
+
+   *Note*:
+   If you are using an IBM Entitlement Key instead of a Redhat Marketplace Pull Secret to authenticate to Redhat Marketplace, use the token in the password field of your entitlement key as the API Secret when prompted. The token can be retrieved from the on-cluster secret `ibm-entitlement-key` as follows:
 
    ```sh
    kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -o go-template='{{ $dc := index .data ".dockerconfigjson"|base64decode }}{{$dc}}' | grep -e "password"
@@ -57,8 +60,6 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
    ```sh
    kubectl get secret ibm-entitlement-key -n openshift-redhat-marketplace -ojson | jq '.data | map_values(@base64d) .".dockerconfigjson" | fromjson.auths."stg.icr.io".password' 
    ```
-
-   This will create the default configuration on your home directory. `~/.datactl/config`
 
 4. Add the role-binding to the default service account on operator-namespace.
 
