@@ -16,6 +16,7 @@ package output
 
 import (
 	"fmt"
+	"io"
 
 	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,9 +26,11 @@ import (
 )
 
 func NewActionCLITableOrStruct(
+	out io.Writer,
 	flags *get.PrintFlags,
 	printer printers.ResourcePrinter,
 ) *TableOrStructPrinter {
+	writer := printers.GetNewTabWriter(out)
 	return &TableOrStructPrinter{
 		PrintFlags: flags,
 		ColumnDefinitions: []metav1.TableColumnDefinition{
@@ -70,6 +73,7 @@ func NewActionCLITableOrStruct(
 				},
 			}
 		},
+		w: writer,
 	}
 }
 

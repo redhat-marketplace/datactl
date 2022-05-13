@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metering
+package bundle
 
 import (
 	"archive/tar"
@@ -113,6 +113,7 @@ func (f *BundleFile) Walk(walk func(header *tar.Header, r io.Reader)) error {
 	return nil
 }
 
+// Compact will remove files that are duplicates or not in fileNames
 func (f *BundleFile) Compact(fileNames map[string]interface{}) error {
 	headers := map[string]int{}
 	os.Remove(f.Name() + "compact")

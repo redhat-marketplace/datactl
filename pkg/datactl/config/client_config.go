@@ -17,6 +17,7 @@ package config
 import (
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
@@ -28,7 +29,7 @@ type ClientConfig interface {
 
 	MarketplaceClientConfig() (*marketplace.MarketplaceConfig, error)
 
-	DataServiceClientConfig() (*dataservice.DataServiceConfig, error)
+	DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error)
 
 	MeteringExport() (*datactlapi.MeteringExport, error)
 
@@ -57,8 +58,8 @@ func (c *clientConfig) MarketplaceClientConfig() (*marketplace.MarketplaceConfig
 	return config, err
 }
 
-func (c *clientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig, error) {
-	config, err := c.defaultClientConfig.DataServiceClientConfig()
+func (c *clientConfig) DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error) {
+	config, err := c.defaultClientConfig.DataServiceClientConfig(source)
 	// replace client-go's ErrEmptyConfig error with our custom, more verbose version
 	if clientcmd.IsEmptyConfig(err) {
 		return config, genericclioptions.ErrEmptyConfig

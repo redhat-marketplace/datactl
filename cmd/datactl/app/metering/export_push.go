@@ -24,12 +24,12 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/gotidy/ptr"
+	"github.com/redhat-marketplace/datactl/pkg/bundle"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/metering"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
+	"github.com/redhat-marketplace/datactl/pkg/printers/output"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -109,7 +109,7 @@ type exportPushOptions struct {
 	marketplace  marketplace.Client
 
 	currentMeteringExport *datactlapi.MeteringExport
-	bundle                *metering.BundleFile
+	bundle                *bundle.BundleFile
 
 	ToPrinter func(string) (printers.ResourcePrinter, error)
 
@@ -135,7 +135,7 @@ func (e *exportPushOptions) Complete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	e.bundle, err = metering.NewBundleFromExport(e.currentMeteringExport)
+	e.bundle, err = bundle.NewBundleFromExport(e.currentMeteringExport)
 	if err != nil {
 		return err
 	}
@@ -170,12 +170,6 @@ func (e *exportPushOptions) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	bundle, err := metering.NewBundle(e.currentMeteringExport.FileName)
-	if err != nil {
-		return err
-	}
-	defer bundle.Close()
-
 	writer := printers.GetNewTabWriter(e.Out)
 	p := output.NewHumanOutput()
 
@@ -184,7 +178,7 @@ func (e *exportPushOptions) Run() error {
 		return err
 	}
 
-	print = output.NewActionCLITableOrStruct(e.PrintFlags, print)
+	print = output.NewActionCLITableOrStruct(e.Out, e.PrintFlags, print)
 
 	file := e.currentMeteringExport.FileName
 
@@ -218,7 +212,7 @@ func (e *exportPushOptions) Run() error {
 	found := 0
 	pushed := 0
 
-	err = metering.WalkTar(e.currentMeteringExport.FileName, func(header *tar.Header, r io.Reader) error {
+	err = bundle.WalkTar(e.currentMeteringExport.FileName, func(header *tar.Header, r io.Reader) error {
 		// skip our helper commit file
 		if header.Name == "commit.json" {
 			return nil
@@ -314,7 +308,7 @@ func (e *exportPushOptions) Run() error {
 		return nil
 	}
 
-	err = bundle.Compact(nil)
+	err = e.bundle.Compact(nil)
 	if err != nil {
 		return err
 	}

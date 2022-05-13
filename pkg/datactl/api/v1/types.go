@@ -15,6 +15,7 @@
 package v1
 
 import (
+	api "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,9 +24,13 @@ import (
 type Config struct {
 	MarketplaceEndpoint UploadAPI `json:"upload-api"`
 
+	CurrentMeteringExport *MeteringExport `json:"current-metering-export,omitempty"`
+
 	MeteringExports []*MeteringExport `json:"metering-export-history,omitempty"`
 
-	DataServiceEndpoints []*DataServiceEndpoint `json:"data-service-endpoints"`
+	DataServiceEndpoints []*DataServiceEndpoint `json:"data-service-endpoints,omitempty"`
+
+	Sources []*Source `json:"sources,omitempty"`
 }
 
 type MeteringExport struct {
@@ -36,6 +41,18 @@ type MeteringExport struct {
 
 	// +optional
 	Files []*dataservicev1.FileInfoCTLAction `json:"files,omitempty"`
+}
+
+type Source struct {
+	Name string `json:"source-name"`
+
+	Type api.SourceType `json:"source-type"`
+
+	LastAccessTime metav1.Time `json:"last-access-time,omitempty"`
+}
+
+func (s *Source) String() string {
+	return s.Type.String() + ":" + s.Name
 }
 
 type UploadAPI struct {

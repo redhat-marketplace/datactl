@@ -17,6 +17,7 @@ package output
 import (
 	"io"
 
+	"github.com/liggitt/tabwriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -31,6 +32,11 @@ type TableOrStructPrinter struct {
 	ObjectToRow       func(obj runtime.Object) metav1.TableRow
 
 	table *metav1.Table
+	w     *tabwriter.Writer
+}
+
+func (t *TableOrStructPrinter) Flush() {
+	t.w.Flush()
 }
 
 func (t *TableOrStructPrinter) PrintObj(obj runtime.Object, w io.Writer) error {
@@ -49,4 +55,8 @@ func (t *TableOrStructPrinter) PrintObj(obj runtime.Object, w io.Writer) error {
 	}
 
 	return t.Printer.PrintObj(t.table, w)
+}
+
+func (t *TableOrStructPrinter) Print(obj runtime.Object) error {
+	return t.PrintObj(t.table, t.w)
 }

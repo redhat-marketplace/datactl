@@ -26,9 +26,13 @@ import (
 type Config struct {
 	MarketplaceEndpoint UploadAPI `json:"upload-api"`
 
+	CurrentMeteringExport *MeteringExport `json:"current-metering-export,omitempty"`
+
 	MeteringExports map[string]*MeteringExport `json:"metering-export-history,omitempty"`
 
-	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints"`
+	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints,omitempty"`
+
+	Sources map[string]*Source `json:"sources,omitempty"`
 }
 
 type MeteringExport struct {
@@ -49,6 +53,18 @@ type MeteringExport struct {
 
 	// +k8s:conversion-gen=false
 	Pushed bool `json:"-"`
+}
+
+type Source struct {
+	Name string `json:"source-name"`
+
+	Type SourceType `json:"source-type"`
+
+	LastAccessTime metav1.Time `json:"last-access-time,omitempty"`
+}
+
+func (s *Source) String() string {
+	return s.Type.String() + ":" + s.Name
 }
 
 // DEPRECATED

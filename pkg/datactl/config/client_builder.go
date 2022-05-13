@@ -19,11 +19,11 @@ import (
 	"io"
 	"sync"
 
-	"emperror.dev/errors"
 	"github.com/redhat-marketplace/datactl/pkg/clients"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	"github.com/redhat-marketplace/datactl/pkg/clients/serviceaccount"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -93,13 +93,13 @@ func (config *DeferredLoadingClientConfig) MarketplaceClientConfig() (*marketpla
 	return mktpl, err
 }
 
-func (config *DeferredLoadingClientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig, error) {
+func (config *DeferredLoadingClientConfig) DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error) {
 	mergedClientConfig, err := config.createClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	ds, err := mergedClientConfig.DataServiceClientConfig()
+	ds, err := mergedClientConfig.DataServiceClientConfig(source)
 	if clientcmd.IsEmptyConfig(err) {
 		return nil, genericclioptions.ErrEmptyConfig
 	}
@@ -144,7 +144,9 @@ func NewNonInteractiveClientConfig(config datactlapi.Config, contextName string,
 	}
 }
 
-// DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config, options overrides, and an optional fallbackReader for auth information
+// DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config,
+// options overrides, and an optional fallbackReader for auth information.
+// Is responsible for generating the result.
 type DirectClientConfig struct {
 	config        datactlapi.Config
 	contextName   string
@@ -167,24 +169,13 @@ func (config *DirectClientConfig) MarketplaceClientConfig() (*marketplace.Market
 	return mktplConfig, nil
 }
 
-func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig, error) {
-	kubeConfig, err := config.kubectlConfig.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	context, ok := kubeConfig.Contexts[kubeConfig.CurrentContext]
-
-	if !ok {
-		return nil, errors.New("current kubectl context does now have a configuration")
-	}
-
+func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error) {
 	datactlConfig, err := config.RawConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	dsConfig, exists := datactlConfig.DataServiceEndpoints[context.Cluster]
+	dsConfig, exists := datactlConfig.DataServiceEndpoints[source.Name]
 
 	if !exists {
 		return nil, fmt.Errorf("data-service is not configured, run %q", "datactl config init")
@@ -244,27 +235,11 @@ func (config *DirectClientConfig) MeteringExport() (*datactlapi.MeteringExport, 
 		return nil, err
 	}
 
-	kubeConfig, err := config.kubectlConfig.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	context, ok := kubeConfig.Contexts[kubeConfig.CurrentContext]
-
-	if !ok {
-		return nil, errors.New("current kubectl context does now have a configuration")
-	}
-
-	currentMeteringExport, ok = datactlConfig.MeteringExports[context.Cluster]
-
-	if !ok {
-		currentMeteringExport = &datactlapi.MeteringExport{
-			DataServiceCluster: context.Cluster,
-		}
-
-		datactlConfig.MeteringExports[context.Cluster] = currentMeteringExport
+	if datactlConfig.CurrentMeteringExport == nil {
+		currentMeteringExport = &datactlapi.MeteringExport{}
+		datactlConfig.CurrentMeteringExport = currentMeteringExport
 		return currentMeteringExport, err
 	}
 
-	return currentMeteringExport, err
+	return datactlConfig.CurrentMeteringExport, err
 }

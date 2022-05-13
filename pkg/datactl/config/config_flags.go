@@ -20,6 +20,7 @@ import (
 	"github.com/gotidy/ptr"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -45,7 +46,7 @@ type ConfigFlags struct {
 	// dataservice
 	DataServiceCAFile *string
 
-	dataServiceClient     dataservice.Client
+	dataServiceClient     map[string]dataservice.Client
 	dataServiceClientLock sync.Mutex
 
 	meteringExportLock sync.Mutex
@@ -106,26 +107,26 @@ func (f *ConfigFlags) toRawConfigLoader() ClientConfig {
 	}
 }
 
-func (f *ConfigFlags) DataServiceClient() (dataservice.Client, error) {
-	return f.toPersistentDataServiceClient()
+func (f *ConfigFlags) DataServiceClient(source api.Source) (dataservice.Client, error) {
+	return f.toPersistentDataServiceClient(source)
 }
 
-func (f *ConfigFlags) toPersistentDataServiceClient() (dataservice.Client, error) {
+func (f *ConfigFlags) toPersistentDataServiceClient(source api.Source) (dataservice.Client, error) {
 	f.dataServiceClientLock.Lock()
 	defer f.dataServiceClientLock.Unlock()
 
-	if f.dataServiceClient != nil {
-		return f.dataServiceClient, nil
+	if c, ok := f.dataServiceClient[source.Name]; ok {
+		return c, nil
 	}
 
-	config, err := f.RawPersistentConfigLoader().DataServiceClientConfig()
+	config, err := f.RawPersistentConfigLoader().DataServiceClientConfig(source)
 
 	if err != nil {
 		return nil, err
 	}
 
-	f.dataServiceClient = dataservice.NewClient(config)
-	return f.dataServiceClient, nil
+	f.dataServiceClient[source.Name] = dataservice.NewClient(config)
+	return f.dataServiceClient[source.Name], nil
 }
 
 func (f *ConfigFlags) MarketplaceClient() (marketplace.Client, error) {

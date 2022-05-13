@@ -72,6 +72,15 @@ var (
 	UseModifyConfigLock = true
 )
 
+type ModifyableConfig struct {
+	*datactlapi.Config
+	configAccess ConfigAccess
+}
+
+func (m *ModifyableConfig) Save() error {
+	return ModifyConfig(m.configAccess, *m.Config, true)
+}
+
 func ModifyConfig(configAccess ConfigAccess, newConfig datactlapi.Config, relativizePaths bool) error {
 	if UseModifyConfigLock {
 		possibleSources := configAccess.GetLoadingPrecedence()

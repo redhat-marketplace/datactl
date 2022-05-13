@@ -28,7 +28,7 @@ import (
 	"github.com/manifoldco/promptui"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
+	"github.com/redhat-marketplace/datactl/pkg/printers/output"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
