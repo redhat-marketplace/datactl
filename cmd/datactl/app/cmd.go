@@ -24,6 +24,7 @@ import (
 
 	configcmd "github.com/redhat-marketplace/datactl/cmd/datactl/app/config"
 	"github.com/redhat-marketplace/datactl/cmd/datactl/app/metering"
+	"github.com/redhat-marketplace/datactl/cmd/datactl/app/sources"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/kubectl/pkg/util/term"
 
 	_ "embed"
+
 	"github.com/redhat-marketplace/datactl/pkg/printers/output"
 )
 
@@ -146,6 +148,7 @@ func NewDatactlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 			Message: "Metering Commands:",
 			Commands: []*cobra.Command{
 				metering.NewCmdExport(rhmConfigFlags, f, ioStreams),
+				sources.NewCmdSources(rhmConfigFlags, f, ioStreams),
 			},
 		},
 		{

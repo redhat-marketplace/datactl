@@ -29,7 +29,7 @@ type CommitableSource interface {
 		currentMeteringExport *api.MeteringExport,
 		bundle *bundle.BundleFile,
 		opts GenericOptions,
-	) error
+	) (count int, err error)
 }
 
 type Source interface {
@@ -38,7 +38,7 @@ type Source interface {
 		currentMeteringExport *api.MeteringExport,
 		bundle *bundle.BundleFile,
 		options GenericOptions,
-	) error
+	) (count int, err error)
 }
 
 type Factory interface {
@@ -163,7 +163,7 @@ func (o *Options) GetBool(name string) (bool, bool, error) {
 		return s, true, nil
 	}
 
-	return false, false, fmt.Errorf("not found")
+	return false, false, nil
 }
 
 func (o *Options) GetTime(name string) (time.Time, bool, error) {

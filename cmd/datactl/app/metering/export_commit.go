@@ -184,20 +184,19 @@ func (c *exportCommitOptions) Run() error {
 			continue
 		}
 
-		c.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
-			p := ho
-			p.WithDetails("source", s.Name, "type", s.Type).Titlef("%s", i18n.T("commit started for source"))
+		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
+			p.Titlef("%s", i18n.T("commit started for source"))
 			return p
 		})
 
-		err = commitSource.Commit(ctx, c.currentMeteringExport, c.bundle, sources.EmptyOptions())
+		count, err := commitSource.Commit(ctx, c.currentMeteringExport, c.bundle, sources.EmptyOptions())
 		if err != nil {
 			errs = append(errs, err)
 		}
 
-		c.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
-			p := ho
-			p.WithDetails("source", s.Name, "type", s.Type).Infof(i18n.T("commit complete"))
+		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p.WithDetails("count", count).Infof(i18n.T("commit complete"))
 			return p
 		})
 	}

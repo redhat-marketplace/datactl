@@ -178,7 +178,7 @@ func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*d
 	dsConfig, exists := datactlConfig.DataServiceEndpoints[source.Name]
 
 	if !exists {
-		return nil, fmt.Errorf("data-service is not configured, run %q", "datactl config init")
+		return nil, fmt.Errorf("data-service with name %s not found", source.Name)
 	}
 
 	restConfig, err := config.kubectlConfig.ToRESTConfig()

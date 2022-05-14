@@ -115,6 +115,10 @@ func (f *ConfigFlags) toPersistentDataServiceClient(source api.Source) (dataserv
 	f.dataServiceClientLock.Lock()
 	defer f.dataServiceClientLock.Unlock()
 
+	if f.dataServiceClient == nil {
+		f.dataServiceClient = make(map[string]dataservice.Client)
+	}
+
 	if c, ok := f.dataServiceClient[source.Name]; ok {
 		return c, nil
 	}

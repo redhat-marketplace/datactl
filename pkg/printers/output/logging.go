@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 
+	"emperror.dev/errors"
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
 	"github.com/fatih/color"
@@ -86,6 +87,11 @@ func (h HumanOutput) Println(a ...interface{}) {
 
 func (h *HumanOutput) WithDetails(key string, value interface{}, fields ...interface{}) *HumanOutput {
 	output := newHumanOutput(h.padding)
+
+	for k, v := range h.fields {
+		output.fields[k] = v
+	}
+
 	output.fields[key] = value
 
 	if len(fields) > 0 && len(fields)%2 == 0 {
@@ -100,6 +106,7 @@ func (h *HumanOutput) WithDetails(key string, value interface{}, fields ...inter
 			}
 		}
 	}
+
 	return output
 }
 
@@ -120,10 +127,39 @@ func (h HumanOutput) Warnf(format string, a ...interface{}) {
 
 func (h HumanOutput) Errorf(err error, format string, a ...interface{}) {
 	cli.Default.Padding = int(h.padding)
+	details := errors.GetDetails(err)
+	fields := h.fields
+	for i := 0; i < len(details); i = i + 2 {
+		key := details[i]
+		value := details[i+1]
+
+		if k, ok := key.(string); ok {
+			fields[k] = value
+		}
+		if k, ok := key.(fmt.Stringer); ok {
+			fields[k.String()] = value
+		}
+	}
+
 	log.WithFields(h.fields).WithError(err).Errorf(format, a...)
 }
 
 func (h HumanOutput) Fatalf(err error, format string, a ...interface{}) {
 	cli.Default.Padding = int(h.padding)
-	log.WithFields(h.fields).WithError(err).Fatalf(format, a...)
+	details := errors.GetDetails(err)
+
+	fields := h.fields
+	for i := 0; i < len(details); i = i + 2 {
+		key := details[i]
+		value := details[i+1]
+
+		if k, ok := key.(string); ok {
+			fields[k] = value
+		}
+		if k, ok := key.(fmt.Stringer); ok {
+			fields[k.String()] = value
+		}
+	}
+
+	log.WithFields(fields).WithError(err).Fatalf(format, a...)
 }

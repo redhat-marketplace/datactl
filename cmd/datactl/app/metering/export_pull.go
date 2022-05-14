@@ -130,37 +130,42 @@ func (e *exportPullOptions) Run() error {
 	if err != nil {
 		return err
 	}
-	errs := []error{}
-
-	e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
-		p := ho
-		p.WithDetails("exportFile", currentMeteringExport.FileName).Titlef("%s", i18n.T("pull started"))
-		p = p.Sub()
-		return p
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+		p.WithDetails("exportFile", currentMeteringExport.FileName).Titlef(i18n.T("pulling sources to file"))
+		return p.Sub()
 	})
 
 	for name := range e.rhmRawConfig.Sources {
 		s := e.rhmRawConfig.Sources[name]
 		source, err := e.Factory.FromSource(*s)
 		if err != nil {
-			errs = append(errs, err)
+			e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+				p := ho
+				p.Errorf(err, i18n.T("failed to get source"))
+				return p
+			})
+
 			continue
 		}
 
-		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
-			p := ho
-			p.WithDetails("source", s.Name, "type", s.Type).Titlef("%s", i18n.T("pull started for source"))
+		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
+			p.Infof(i18n.T("pull start"))
 			return p
 		})
 
-		err = source.Pull(ctx, currentMeteringExport, bundleFile, sources.EmptyOptions())
+		count, err := source.Pull(ctx, currentMeteringExport, bundleFile, sources.EmptyOptions())
 		if err != nil {
-			errs = append(errs, err)
+			e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+				p.Errorf(err, i18n.T("pull failed"))
+				return p
+			})
+
+			continue
 		}
 
-		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
-			p := ho
-			p.WithDetails("source", s.Name, "type", s.Type).Infof(i18n.T("pull complete"))
+		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p.WithDetails("count", count).Infof(i18n.T("pull complete"))
 			return p
 		})
 	}

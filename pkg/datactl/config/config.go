@@ -176,6 +176,48 @@ func ModifyConfig(configAccess ConfigAccess, newConfig datactlapi.Config, relati
 		return err
 	}
 
+	newSources := map[string]*datactlapi.Source{}
+
+	for key, source := range newConfig.Sources {
+		startingSource, exists := startingConfig.Sources[key]
+		destinationFile := source.LocationOfOrigin
+
+		if len(destinationFile) == 0 {
+			destinationFile = configAccess.GetDefaultFilename()
+		}
+
+		if startingSource == nil {
+			startingSource = &datactlapi.Source{}
+		}
+
+		if !reflect.DeepEqual(newSources[key], startingSource) || !exists {
+			newSources[key] = source
+			newSources[key].LocationOfOrigin = destinationFile
+		}
+	}
+
+	if len(newSources) != 0 {
+		if err := writeConfig(configAccess,
+			func(in *datactlapi.Config) (bool, error) {
+				in.Sources = newSources
+
+				return true, nil
+			}); err != nil {
+			return err
+		}
+	}
+
+	if err := writeConfig(configAccess,
+		func(in *datactlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in, startingConfig.CurrentMeteringExport) {
+				in.CurrentMeteringExport = newConfig.CurrentMeteringExport
+				return true, nil
+			}
+			return false, nil
+		}); err != nil {
+		return err
+	}
+
 	return nil
 }
 

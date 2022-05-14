@@ -53,11 +53,11 @@ func (d *dataServiceSource) Commit(
 	ctx context.Context,
 	currentMeteringExport *api.MeteringExport,
 	bundle *bundle.BundleFile,
-	opts GenericOptions) error {
+	opts GenericOptions) (int, error) {
 
 	dryRun, _, err := opts.GetBool(DryRun)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	errs := map[string]error{}
@@ -102,21 +102,21 @@ func (d *dataServiceSource) Commit(
 		})
 	}
 
+	if dryRun {
+		return committed, nil
+	}
+
 	err = bundle.Close()
 	if err != nil {
-		return err
+		return committed, err
 	}
 
 	err = bundle.Compact(nil)
 	if err != nil {
-		return err
+		return committed, err
 	}
 
-	if dryRun {
-		return nil
-	}
-
-	return nil
+	return committed, nil
 }
 
 func (d *dataServiceSource) Pull(
@@ -124,20 +124,20 @@ func (d *dataServiceSource) Pull(
 	currentMeteringExport *api.MeteringExport,
 	bundle *bundle.BundleFile,
 	options GenericOptions,
-) error {
+) (int, error) {
 	includeDeleted, _, err := options.GetBool(IncludeDeleted)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	beforeDate, _, err := options.GetTime(BeforeDate)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	afterDate, _, err := options.GetTime(AfterDate)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	response := dataservicev1.ListFilesResponse{}
@@ -156,7 +156,7 @@ func (d *dataServiceSource) Pull(
 		err := d.dataService.ListFiles(ctx, listOpts, &response)
 
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		for i := range response.Files {
@@ -166,7 +166,7 @@ func (d *dataServiceSource) Pull(
 
 			w, err := bundle.NewFile(cliFile.Name, int64(cliFile.Size))
 			if err != nil {
-				return err
+				return 0, err
 			}
 
 			_, err = d.dataService.DownloadFile(ctx, cliFile.Id, w)
@@ -222,5 +222,5 @@ func (d *dataServiceSource) Pull(
 		currentMeteringExport.Files = append(currentMeteringExport.Files, filesMap[i])
 	}
 
-	return nil
+	return len(files), nil
 }

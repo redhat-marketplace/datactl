@@ -56,6 +56,10 @@ type MeteringExport struct {
 }
 
 type Source struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string `json:"-"`
+
 	Name string `json:"source-name"`
 
 	Type SourceType `json:"source-type"`
