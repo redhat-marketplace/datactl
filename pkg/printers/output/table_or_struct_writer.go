@@ -58,5 +58,5 @@ func (t *TableOrStructPrinter) PrintObj(obj runtime.Object, w io.Writer) error {
 }
 
 func (t *TableOrStructPrinter) Print(obj runtime.Object) error {
-	return t.PrintObj(t.table, t.w)
+	return t.PrintObj(obj, t.w)
 }
