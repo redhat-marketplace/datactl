@@ -205,6 +205,7 @@ func Convert_v1_Source_To_api_Source(in *Source, out *api.Source, s conversion.S
 }
 
 func autoConvert_api_Source_To_v1_Source(in *api.Source, out *Source, s conversion.Scope) error {
+	// INFO: in.LocationOfOrigin opted out of conversion generation
 	out.Name = in.Name
 	out.Type = api.SourceType(in.Type)
 	out.LastAccessTime = in.LastAccessTime
