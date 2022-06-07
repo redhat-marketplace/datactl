@@ -59,6 +59,7 @@ func NewCmdAddDataService(rhmFlags *config.ConfigFlags, f cmdutil.Factory, strea
 		},
 	}
 
+	//adding flags for prompt
 	cmd.Flags().BoolVar(&o.useDefaultContext, "use-default-context", false, i18n.T("use the default kuberentes context instead of prompting"))
 	cmd.Flags().BoolVar(&o.allowNonSystemCA, "allow-non-system-ca", false, i18n.T("allows non system CA certificates to be added to the dataService config"))
 	cmd.Flags().BoolVar(&o.allowSelfsigned, "allow-self-signed", false, i18n.T("allows self-signed certificates to be added to the dataService configs"))

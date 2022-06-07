@@ -200,9 +200,9 @@ func ModifyConfig(configAccess ConfigAccess, newConfig datactlapi.Config, relati
 		if err := writeConfig(configAccess,
 			func(in *datactlapi.Config) (bool, error) {
 				in.Sources = newSources
-
 				return true, nil
 			}); err != nil {
+
 			return err
 		}
 	}
@@ -264,7 +264,6 @@ func writeConfig(
 		if err != nil {
 			return err
 		}
-
 		writeFile, err := mutate(currConfig)
 
 		if !writeFile {
@@ -277,7 +276,6 @@ func writeConfig(
 
 		return nil
 	}
-
 	return errors.New("no config found to write preferences")
 }
 
