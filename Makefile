@@ -8,6 +8,12 @@ GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update t
 
 .DEFAULT_GOAL := install
 
+GOBIN := $(shell pwd)/bin
+PATH := $(GOBIN):$(PATH)
+
+export PATH
+export GOBIN
+
 validate-go-version: ## Validates the installed version of go against Mattermost's minimum requirement.
 	@if [ $(GO_MAJOR_VERSION) -gt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
 		exit 0 ;\
@@ -40,7 +46,7 @@ test:
 	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
 
 .PHONY: generate
-generate: validate-go-version
+generate: validate-go-version tools
 	go generate ./...
 
 .PHONY: install
@@ -59,3 +65,8 @@ release: goreleaser
 .PHONY: goreleaser
 goreleaser:
 	go install github.com/goreleaser/goreleaser@v1.1.0
+
+tools:
+	go mod download
+	go install "k8s.io/code-generator/cmd/conversion-gen@v0.19.16"	
+	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0"
