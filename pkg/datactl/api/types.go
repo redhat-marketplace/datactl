@@ -32,6 +32,8 @@ type Config struct {
 
 	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints,omitempty"`
 
+	ILMTEndpoints map[string]*ILMTEndpoint `json:"ilmt-endpoints,omitempty"`
+
 	Sources map[string]*Source `json:"sources,omitempty"`
 }
 
@@ -151,6 +153,19 @@ type DataServiceEndpoint struct {
 	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthority
 	// +optional
 	CertificateAuthorityData []byte `json:"certificate-authority-data,omitempty"`
+}
+
+type ILMTEndpoint struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
+	Host string `json:"host"`
+
+	Port string `json:"port"`
+
+	// Token is base64 encoded token in the config file, env var, or token argument
+	Token string `json:"token"`
 }
 
 func NewConfig() *Config {

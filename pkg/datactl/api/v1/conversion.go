@@ -51,6 +51,19 @@ func Convert_v1_Config_To_api_Config(a *Config, b *api.Config, scope conversion.
 		b.MeteringExports[bD.FileName] = bD
 	}
 
+	b.ILMTEndpoints = make(map[string]*api.ILMTEndpoint)
+
+	for _, aD := range a.ILMTEndpoints {
+		bD := &api.ILMTEndpoint{}
+
+		err := autoConvert_v1_ILMTEndpoint_To_api_ILMTEndpoint(aD, bD, scope)
+		if err != nil {
+			return err
+		}
+
+		b.ILMTEndpoints[bD.Host] = bD
+	}
+
 	b.Sources = make(map[string]*api.Source)
 
 	for _, aD := range a.Sources {
@@ -97,6 +110,19 @@ func Convert_api_Config_To_v1_Config(a *api.Config, b *Config, scope conversion.
 		}
 
 		b.MeteringExports = append(b.MeteringExports, bD)
+	}
+
+	b.ILMTEndpoints = make([]*ILMTEndpoint, 0, len(a.ILMTEndpoints))
+
+	for _, aD := range a.ILMTEndpoints {
+		bD := &ILMTEndpoint{}
+
+		err := autoConvert_api_ILMTEndpoint_To_v1_ILMTEndpoint(aD, bD, scope)
+		if err != nil {
+			return err
+		}
+
+		b.ILMTEndpoints = append(b.ILMTEndpoints, bD)
 	}
 
 	b.Sources = make([]*Source, 0, len(a.Sources))

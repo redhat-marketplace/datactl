@@ -1,4 +1,4 @@
-// Copyright 2021 IBM Corporation.
+// Copyright YEAR IBM Corporation.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,10 +11,3 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-//go:generate controller-gen object paths=./...
-//go:generate conversion-gen --go-header-file "../../../hack/boilerplate.go.txt" --input-dirs "./v1" -O "zz_generated.conversion" --skip-unsafe=false -v 5 -o "."
-
-// +k8s:deepcopy-gen=package
-
-package api

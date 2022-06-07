@@ -8,6 +8,7 @@ type SourceType string
 
 const (
 	DataService SourceType = "DataService"
+	ILMT        SourceType = "ILMT"
 )
 
 func (s SourceType) String() (text string) {
@@ -22,6 +23,8 @@ func (s *SourceType) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case DataService.String():
 		*s = DataService
+	case ILMT.String():
+		*s = ILMT
 	default:
 		return fmt.Errorf("source type %s not defined", text)
 	}
