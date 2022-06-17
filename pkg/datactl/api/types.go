@@ -166,6 +166,8 @@ type ILMTEndpoint struct {
 
 	// Token is base64 encoded token in the config file, env var, or token argument
 	Token string `json:"token"`
+
+	LastPulldate string `json:"last-pull-date"`
 }
 
 func NewConfig() *Config {

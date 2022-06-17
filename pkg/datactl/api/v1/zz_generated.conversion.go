@@ -180,6 +180,7 @@ func autoConvert_v1_ILMTEndpoint_To_api_ILMTEndpoint(in *ILMTEndpoint, out *api.
 	out.Host = in.Host
 	out.Port = in.Port
 	out.Token = in.Token
+	out.LastPulldate = in.LastPulldate
 	return nil
 }
 
@@ -193,6 +194,7 @@ func autoConvert_api_ILMTEndpoint_To_v1_ILMTEndpoint(in *api.ILMTEndpoint, out *
 	out.Host = in.Host
 	out.Port = in.Port
 	out.Token = in.Token
+	out.LastPulldate = in.LastPulldate
 	return nil
 }
 
@@ -285,3 +287,5 @@ func autoConvert_api_UploadAPI_To_v1_UploadAPI(in *api.UploadAPI, out *UploadAPI
 func Convert_api_UploadAPI_To_v1_UploadAPI(in *api.UploadAPI, out *UploadAPI, s conversion.Scope) error {
 	return autoConvert_api_UploadAPI_To_v1_UploadAPI(in, out, s)
 }
+
+

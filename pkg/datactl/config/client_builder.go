@@ -21,6 +21,7 @@ import (
 
 	"github.com/redhat-marketplace/datactl/pkg/clients"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	"github.com/redhat-marketplace/datactl/pkg/clients/ilmt"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	"github.com/redhat-marketplace/datactl/pkg/clients/serviceaccount"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
@@ -105,6 +106,20 @@ func (config *DeferredLoadingClientConfig) DataServiceClientConfig(source api.So
 	}
 
 	return ds, err
+}
+
+func (config *DeferredLoadingClientConfig) IlmtClientConfig(source api.Source) (*ilmt.IlmtConfig, error) {
+	mergedClientConfig, err := config.createClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	ilmt, err := mergedClientConfig.IlmtClientConfig(source)
+	if clientcmd.IsEmptyConfig(err) {
+		return nil, genericclioptions.ErrEmptyConfig
+	}
+
+	return ilmt, err
 }
 
 func (config *DeferredLoadingClientConfig) ConfigAccess() ConfigAccess {
@@ -221,6 +236,28 @@ func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*d
 	}
 
 	return ds, nil
+}
+
+func (config *DirectClientConfig) IlmtClientConfig(source api.Source) (*ilmt.IlmtConfig, error) {
+	datactlConfig, err := config.RawConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	ilmtConfig, exists := datactlConfig.ILMTEndpoints[source.Name]
+
+	if !exists {
+		return nil, fmt.Errorf("ilmt host with name %s not found", source.Name)
+	}
+
+	ilmt, err := clients.ProvideIlmtSource(ilmtConfig)
+
+	if err != nil {
+		logger.Info("failed to get ILMT source", "err", err)
+		return nil, err
+	}
+
+	return ilmt, nil
 }
 
 func (config *DirectClientConfig) ConfigAccess() ConfigAccess {

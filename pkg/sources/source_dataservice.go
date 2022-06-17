@@ -224,3 +224,7 @@ func (d *dataServiceSource) Pull(
 
 	return len(files), nil
 }
+
+func (d *dataServiceSource) GetResponse() string {
+	return ""
+}

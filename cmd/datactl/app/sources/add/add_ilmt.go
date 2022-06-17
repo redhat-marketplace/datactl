@@ -129,6 +129,9 @@ func (init *addIlmtOptions) promptHost() error {
 	if err != nil {
 		return err
 	}
+	if host == EMPTY {
+		return errors.New("host name not provided for ILMT server")
+	}
 	init.Host = host
 	return nil
 }
@@ -156,6 +159,9 @@ func (init *addIlmtOptions) promptToken() error {
 	token, err := promptToken.Run()
 	if err != nil {
 		return err
+	}
+	if token == EMPTY {
+		return errors.New("token not provided for accessing ILMT API")
 	}
 	init.Token = token
 	return nil
