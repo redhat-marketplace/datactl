@@ -16,7 +16,7 @@ package ilmt
 
 const (
 	COLUMN_NAMES_APPEND        string = "&columns[]=product_id&columns[]=product_name&columns[]=metric_code_name&columns[]=bundle_id&columns[]=flex_id&columns[]=bundle_type&columns[]=bundle_name&columns[]=hwm_quantity&columns[]=bundle_metric_contribution&columns[]=product_bundle_ratio_factor&columns[]=product_bundle_ratio_divider"
-	CRITERIA_STANDALONE        string = "&criteria={'and':[['bundle_id','<=','0']]}&criteria={'and':[['bundle_type','=','-1']]}"
+	CRITERIA_STANDALONE        string = "&limit=2&criteria={'and':[['bundle_id','<=','0']]}&criteria={'and':[['bundle_type','=','-1']]}"
 	CRITEIRA_PRODUCTPARTOFBNDL string = "&criteria={'and':[['bundle_id','>','0']]}"
 	CRITERIA_PARENTPRODUCT     string = "&criteria={'and':[['bundle_type','>','-1']]}"
 	START_DATE_FLD_APPEND      string = "&startdate="
@@ -29,8 +29,13 @@ type DateRange struct {
 	EndDate   string
 }
 
-type ProductLicenceUsage struct {
-	ProductId            int    `json:"product_id"`
+type StandaloneProductResp struct {
+	TotalRows                     int                             `json:"total"`
+	StandaloneProductLicenceUsage []StandaloneProductLicenceUsage `json:"rows"`
+}
+
+type StandaloneProductLicenceUsage struct {
+	ProductId            int64  `json:"product_id"`
 	ProductName          string `json:"product_name"`
 	MetricCodeName       string `json:"metric_code_name"`
 	HwmQuantity          int    `json:"hwm_quantity"`
@@ -43,18 +48,13 @@ type ProductLicenceUsage struct {
 	ProdBndlRatioDivider int    `json:"product_bundle_ratio_divider"`
 }
 
-type ProductResponse struct {
-	TotalRows           int                   `json:"total"`
-	ProductLicenceUsage []ProductLicenceUsage `json:"rows"`
+type ProductPartOfBndlResp struct {
+	TotalRows                     int                             `json:"total"`
+	ProductPartOfBndlLicenceUsage []ProductPartOfBndlLicenceUsage `json:"rows"`
 }
 
-type ProdPartOfBndlResp struct {
-	TotalRows                   int                           `json:"total"`
-	ProdPartOfBundlLicenceUsage []ProdPartOfBundlLicenceUsage `json:"rows"`
-}
-
-type ProdPartOfBundlLicenceUsage struct {
-	ProductId            int    `json:"product_id"`
+type ProductPartOfBndlLicenceUsage struct {
+	ProductId            int64  `json:"product_id"`
 	ProductName          string `json:"product_name"`
 	MetricCodeName       string `json:"metric_code_name"`
 	HwmQuantity          int    `json:"hwm_quantity"`
@@ -67,13 +67,44 @@ type ProdPartOfBundlLicenceUsage struct {
 	ProdBndlRatioDivider int    `json:"product_bundle_ratio_divider"`
 }
 
-type ParentProdResp struct {
-	TotalRows              int                      `json:"total"`
-	ParentProdLicenceUsage []ParentProdLicenceUsage `json:"rows"`
+type ProductUsageTransformedEvent struct {
+	ProductUsageTransformedEventData []ProductUsageTransformedEventData `json:"data"`
 }
 
-type ParentProdLicenceUsage struct {
-	ProductId            int    `json:"product_id"`
+type ProductUsageTransformedEventData struct {
+	AccountId            string `json:"accountId"`
+	AdditionalAttributes `json:"additionalAttributes"`
+	EndDate              int64           `json:"end"`
+	StartDate            int64           `json:"start"`
+	EventId              string          `json:"eventId"`
+	MeasuredUsage        []MeasuredUsage `json:"measuredUsage"`
+}
+
+type MeasuredUsage struct {
+	MetricId string  `json:"metricId"`
+	Value    float64 `json:"value"`
+}
+
+type AdditionalAttributes struct {
+	HostName               string `json:"hostname"`
+	MeasuredMetricId       string `json:"measuredMetricId"`
+	MeasuredValue          int    `json:"measuredValue"`
+	MetricType             string `json:"metricType"`
+	ParentProductId        int64  `json:"parentProductId,omitempty"`
+	ParentProductName      string `json:"parentProductName,omitempty"`
+	ProductConversionRatio string `json:"productConversionRatio,omitempty"`
+	ProductId              int64  `json:"productId"`
+	ProductName            string `json:"productName"`
+	Source                 string `json:"source"`
+}
+
+type ParentProductResp struct {
+	TotalRows                 int                         `json:"total"`
+	ParentProductLicenceUsage []ParentProductLicenceUsage `json:"rows"`
+}
+
+type ParentProductLicenceUsage struct {
+	ProductId            int64  `json:"product_id"`
 	ProductName          string `json:"product_name"`
 	MetricCodeName       string `json:"metric_code_name"`
 	HwmQuantity          int    `json:"hwm_quantity"`

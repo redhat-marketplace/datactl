@@ -318,6 +318,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 	}
 
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+
 		p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
 		p.Infof(i18n.T("pull start"))
 		return p
@@ -367,7 +368,6 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 	))
 
 	productUsageResponseStr := source.GetResponse()
-	fmt.Println(productUsageResponseStr)
 
 	if err != nil {
 		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
