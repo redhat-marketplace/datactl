@@ -22,8 +22,10 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
+// For some reason, Setenv is not influencing the default path for cache-dir in generated doc
+// https://github.com/kubernetes/cli-runtime/blob/v0.22.2/pkg/genericclioptions/config_flags.go#L59
 func init() {
-	os.Setenv("HOME", "$HOME")
+	os.Setenv("HOME", "/home/user")
 }
 
 func main() {
