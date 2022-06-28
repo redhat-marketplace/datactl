@@ -27,6 +27,7 @@ func NewCmdAdd(rhmFlags *config.ConfigFlags, f cmdutil.Factory, streams genericc
 	}
 
 	cmd.AddCommand(NewCmdAddDataService(rhmFlags, f, streams))
+	cmd.AddCommand(NewCmdAddIlmt(rhmFlags, f, streams))
 	return cmd
 }
 

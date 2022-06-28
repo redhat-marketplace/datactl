@@ -39,6 +39,8 @@ type Source interface {
 		bundle *bundle.BundleFile,
 		options GenericOptions,
 	) (count int, err error)
+
+	GetResponse() string
 }
 
 type Factory interface {
@@ -59,6 +61,13 @@ func (s *sourceFactory) FromSource(source api.Source) (Source, error) {
 		}
 
 		return NewDataService(dataService, s.printer)
+	case api.ILMT:
+		ilmt, err := s.rhmConfigFlags.IlmtClient(source)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewIlmtSource(ilmt, s.printer)
 	}
 
 	return nil, fmt.Errorf("sourceType %s not found", source.Type)

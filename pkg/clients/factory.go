@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	"github.com/redhat-marketplace/datactl/pkg/clients/ilmt"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -111,6 +112,28 @@ func ProvideDataService(
 		URL:       url,
 		Token:     token,
 		TlsConfig: tlsConfig,
+	}, nil
+}
+
+func ProvideIlmtSource(
+	ilmtConfig *datactlapi.ILMTEndpoint,
+) (*ilmt.IlmtConfig, error) {
+
+	token := strings.TrimSpace(ilmtConfig.Token)
+
+	if token == "" {
+		return nil, fmt.Errorf("token or token-data not provided")
+	}
+
+	url := ilmtConfig.Host
+
+	if !strings.HasPrefix(url, "https://") {
+		url = fmt.Sprintf("https://" + url)
+	}
+
+	return &ilmt.IlmtConfig{
+		Host:  url,
+		Token: token,
 	}, nil
 }
 
