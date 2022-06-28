@@ -247,7 +247,7 @@ func (config *DirectClientConfig) IlmtClientConfig(source api.Source) (*ilmt.Ilm
 	ilmtConfig, exists := datactlConfig.ILMTEndpoints[source.Name]
 
 	if !exists {
-		return nil, fmt.Errorf("ilmt host with name %s not found", source.Name)
+		return nil, fmt.Errorf("ILMT host with name %s not found", source.Name)
 	}
 
 	ilmt, err := clients.ProvideIlmtSource(ilmtConfig)
