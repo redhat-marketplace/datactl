@@ -117,7 +117,7 @@ var _ = Describe("export_pull_ilmt", func() {
 				if s.Type.String() == o.sourceType {
 					_, response, _ := o.IlmtPullBase(s, ctx, nil, nil)
 					expectedRespPathComplete := os.Getenv("HOME")
-					expectedRespPath := "/.datactl/productusageresponse.json"
+					expectedRespPath := "/go/src/datactl/pkg/mocks/productusageresponse.json"
 					expectedRespPathComplete += expectedRespPath
 					expectedRespData, _ := os.ReadFile(expectedRespPathComplete)
 					expectedRespDataStr := string(expectedRespData)
