@@ -53,11 +53,12 @@ var (
 )
 
 const (
-	ILMT        string = "ILMT"
-	DATASERVICE string = "DataService"
-	EMPTY       string = ""
-	StartDate          = "startDate"
-	EndDate            = "endDate"
+	ILMT            string = "ILMT"
+	DATASERVICE     string = "DataService"
+	EMPTY           string = ""
+	StartDate              = "startDate"
+	EndDate                = "endDate"
+	REQUIRED_FORMAT string = "2006-01-02"
 )
 
 func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -70,7 +71,7 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	cmd := &cobra.Command{
 		Use:                   "pull all [(--source-type SOURCE_TYPE) (--source-name SOURCE_NAME) (--startdate STARTDATE) (--enddate ENDDATE)]",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Pulls files from Dataservice Operator/IBM Licence Metric Tool"),
+		Short:                 i18n.T("Pulls files from RHM Operator's Dataservice or IBM Licence Metric Tool"),
 		Long:                  output.ReplaceCommandStrings(pullLong),
 		Example:               output.ReplaceCommandStrings(pullExample),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -182,7 +183,7 @@ func (e *exportPullOptions) Validate() error {
 				os.Exit(1)
 			}
 
-			startDate, err := time.Parse("2006-01-02", e.startDate)
+			startDate, err := time.Parse(REQUIRED_FORMAT, e.startDate)
 			if err != nil {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
@@ -216,7 +217,7 @@ func (e *exportPullOptions) Validate() error {
 				os.Exit(1)
 			}
 
-			endDate, err := time.Parse("2006-01-02", e.endDate)
+			endDate, err := time.Parse(REQUIRED_FORMAT, e.endDate)
 			if err != nil {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
