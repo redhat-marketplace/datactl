@@ -58,6 +58,8 @@ const (
 	EMPTY           string = ""
 	StartDate              = "startDate"
 	EndDate                = "endDate"
+	Source                 = "source"
+	SourceType             = "sourceType"
 	REQUIRED_FORMAT string = "2006-01-02"
 )
 
@@ -366,9 +368,9 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 	productCount, err := source.Pull(ctx, currentMeteringExport, bundleFile, sources.NewOptions(
 		StartDate, e.startDate,
 		EndDate, e.endDate,
+		Source, e.sourceName,
+		SourceType, e.sourceType,
 	))
-
-	productUsageResponseStr := source.GetResponse()
 
 	if err != nil {
 		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
@@ -384,7 +386,7 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 		return p
 	})
 
-	return productCount, productUsageResponseStr, nil
+	return productCount, EMPTY, nil
 }
 
 func (e *exportPullOptions) promptStartDate() (string, error) {

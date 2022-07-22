@@ -14,6 +14,8 @@
 
 package ilmt
 
+import "time"
+
 const (
 	COLUMN_NAMES_APPEND        string = "&columns[]=product_id&columns[]=product_name&columns[]=metric_code_name&columns[]=bundle_id&columns[]=flex_id&columns[]=bundle_type&columns[]=bundle_name&columns[]=hwm_quantity&columns[]=bundle_metric_contribution&columns[]=product_bundle_ratio_factor&columns[]=product_bundle_ratio_divider"
 	CRITERIA_STANDALONE        string = "&limit=2&criteria={'and':[['bundle_id','<=','0']]}&criteria={'and':[['bundle_type','=','-1']]}"
@@ -25,8 +27,8 @@ const (
 )
 
 type DateRange struct {
-	StartDate string
-	EndDate   string
+	StartDate time.Time
+	EndDate   time.Time
 }
 
 type StandaloneProductResp struct {
