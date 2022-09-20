@@ -18,9 +18,9 @@
 package main
 
 import (
-	_ "github.com/google/addlicense@latest"
-	_ "github.com/google/go-licenses@v2"
+	_ "github.com/google/addlicense"
+	_ "github.com/google/go-licenses"
 	_ "github.com/onsi/ginkgo/ginkgo"
 	_ "github.com/spf13/cobra/doc"
-	_ "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0"
+	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )
