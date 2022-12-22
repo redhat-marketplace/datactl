@@ -17,7 +17,6 @@ package ilmt
 import (
 	"context"
 	"crypto/sha256"
-	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +24,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -70,10 +70,10 @@ func NewClient(config *IlmtConfig) Client {
 func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange) (int, string, error) {
 	startDate, _ := time.Parse(REQUIRED_FORMAT, dateRange.StartDate)
 	endDate, _ := time.Parse(REQUIRED_FORMAT, dateRange.EndDate)
-	daysDifference := endDate.Sub(startDate).Hours() / 24
 	fileCounter := 0
-	productUsageTransformedEventJsonAll := make([][]byte, int(daysDifference+1))
-	productUsageTransformedEventJsonAllStr := EMPTY
+
+	productUsageTransformedEventJsonNew := make([]ProductUsageTransformedEventData, 0)
+
 	for selectedDate := startDate; !selectedDate.After(endDate); selectedDate = selectedDate.AddDate(0, 0, 1) {
 
 		urlForStandaloneProductUsage, err := ilmtC.req.FetchUsageData(ctx, ilmtC.IlmtConfig.Host, ilmtC.IlmtConfig.Token, CRITERIA_STANDALONE, strings.Split(selectedDate.String(), BLANK_VALUE)[0], strings.Split(selectedDate.String(), BLANK_VALUE)[0])
@@ -143,12 +143,6 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 		var parentProductRespObj ParentProductResp
 		json.Unmarshal(parentProductRespData, &parentProductRespObj)
 
-		productUsageCount := len(standaloneProductRespObj.StandaloneProductLicenceUsage) + len(productPartOfBndlRespObj.ProductPartOfBndlLicenceUsage)
-		productUsageTrnsfrmdEvntDataSlice := make([]ProductUsageTransformedEventData, productUsageCount)
-
-		counter := 0
-		productUsageTransformedEventJson := []byte{}
-
 		for _, productResp := range standaloneProductRespObj.StandaloneProductLicenceUsage {
 
 			startDateMillis := startDate.UnixMilli()
@@ -187,7 +181,6 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			}
 
 			productUsageTransformedEventData := ProductUsageTransformedEventData{
-				AccountId:            "RHM account id",
 				StartDate:            startDateMillis,
 				EndDate:              endDateMillis,
 				EventId:              eventIdFinal,
@@ -195,13 +188,13 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 				AdditionalAttributes: additionalAttributes,
 			}
 
-			productUsageTrnsfrmdEvntDataSlice[counter] = productUsageTransformedEventData
-			counter++
+			productUsageTransformedEventJsonNew = append(productUsageTransformedEventJsonNew, productUsageTransformedEventData)
 		}
 
 		for _, prodPartOfBundle := range productPartOfBndlRespObj.ProductPartOfBndlLicenceUsage {
 
 			startDateMillis := startDate.UnixMilli()
+			endDateMillis := endDate.UnixMilli()
 			productId := prodPartOfBundle.ProductId
 			measuredMetricId := prodPartOfBundle.MetricCodeName
 			parentProductId, parentProductName, metricId, err := GetParentProduct(prodPartOfBundle, parentProductRespObj)
@@ -212,14 +205,13 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			host := ilmtC.IlmtConfig.Host[8:38]
 			BELL := '\a'
 
-			eventId := fmt.Sprintf("%d%U%d%U%s%U%d%U%s", startDateMillis, BELL, productId, BELL, measuredMetricId, BELL, parentProductId, BELL, host)
+			eventId := fmt.Sprintf("%d-%d%U%d%U%s%U%d%U%s", startDateMillis, endDateMillis, BELL, productId, BELL, measuredMetricId, BELL, parentProductId, BELL, host)
 			h := sha256.New()
 			h.Write([]byte(eventId))
 			bs := h.Sum(nil)
 			sEnc := b64.StdEncoding.EncodeToString(bs)
 			eventIdFinal := "ILMT-" + sEnc
 
-			endDateMillis := endDate.UnixMilli()
 			measuredValue := prodPartOfBundle.HwmQuantity
 			productConversionRatio := GetProductConversionRatio(prodPartOfBundle.ProdBndlRatioDivider, prodPartOfBundle.ProdBndlRatioFactor)
 			productName := prodPartOfBundle.ProductName
@@ -245,34 +237,34 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			}
 
 			productUsageTransformedEventData := ProductUsageTransformedEventData{
-				AccountId:            "RHM account id",
 				StartDate:            startDateMillis,
 				EndDate:              endDateMillis,
 				EventId:              eventIdFinal,
 				MeasuredUsage:        measuredUsage,
 				AdditionalAttributes: additionalAttributes,
 			}
-			productUsageTrnsfrmdEvntDataSlice[counter] = productUsageTransformedEventData
-			counter++
+			productUsageTransformedEventJsonNew = append(productUsageTransformedEventJsonNew, productUsageTransformedEventData)
 		}
 
-		productUsageTransformedEvent := ProductUsageTransformedEvent{
-			ProductUsageTransformedEventData: productUsageTrnsfrmdEvntDataSlice,
-		}
-		productUsageTransformedEventJson, _ = json.Marshal(productUsageTransformedEvent)
-		fmt.Println("===============================================================================")
-		pullHeading := fmt.Sprintf("Product Usage Data for :%s", strings.Split(selectedDate.String(), BLANK_VALUE)[0])
-		fmt.Println(pullHeading)
-		fmt.Println(string(productUsageTransformedEventJson))
-		productUsageTransformedEventJsonAll[fileCounter] = productUsageTransformedEventJson
 		fileCounter++
 	}
 
-	for fileCounterIndex := 0; fileCounterIndex < fileCounter; fileCounterIndex++ {
-		productUsageTransformedEventJsonAllStr = productUsageTransformedEventJsonAllStr + string(productUsageTransformedEventJsonAll[fileCounterIndex])
+	productUsageTransformedEventNew := ProductUsageTransformedEvent{
+		ProductUsageTransformedEventData: productUsageTransformedEventJsonNew,
 	}
+	productUsageTransformedEventNewJson, _ := json.Marshal(productUsageTransformedEventNew)
+	productUsageTransformedEventNewJsonStr := string(productUsageTransformedEventNewJson)
 
-	return fileCounter, productUsageTransformedEventJsonAllStr, nil
+	// fix to adjust types returned by ILMT and required by RHM
+	measuredValue := regexp.MustCompile(`"measuredValue":\s?(\d*),`)
+	parentProductId := regexp.MustCompile(`"parentProductId":\s?(\d*),`)
+	productId := regexp.MustCompile(`"productId":\s?(\d*),`)
+
+	productUsageTransformedEventNewJsonStr = measuredValue.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"measuredValue\":\"$1\",")
+	productUsageTransformedEventNewJsonStr = parentProductId.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"parentProductId\":\"$1\",")
+	productUsageTransformedEventNewJsonStr = productId.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"productId\":\"$1\",")
+
+	return fileCounter, productUsageTransformedEventNewJsonStr, nil
 }
 
 func GetParentProduct(prodPartOfbndl ProductPartOfBndlLicenceUsage, parentProdResp ParentProductResp) (int64, string, string, error) {
