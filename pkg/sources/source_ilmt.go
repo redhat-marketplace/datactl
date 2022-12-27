@@ -168,8 +168,6 @@ func Tar(src string, writers ...io.Writer) error {
 	// walk path
 	return filepath.Walk(src, func(file string, fi os.FileInfo, errIn error) error {
 
-		fmt.Println(file)
-
 		// return on any error
 		if errIn != nil {
 			return errors.Wrap(errIn, "fail to tar files")

@@ -17,6 +17,7 @@ package ilmt
 import (
 	"context"
 	"crypto/sha256"
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,9 +73,12 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 	endDate, _ := time.Parse(REQUIRED_FORMAT, dateRange.EndDate)
 	fileCounter := 0
 
-	productUsageTransformedEventJsonNew := make([]ProductUsageTransformedEventData, 0)
+	productUsageTransformedEventJson := make([]ProductUsageTransformedEventData, 0)
 
 	for selectedDate := startDate; !selectedDate.After(endDate); selectedDate = selectedDate.AddDate(0, 0, 1) {
+
+		startDateMillis := selectedDate.UnixMilli()
+		endDateMillis := selectedDate.AddDate(0, 0, 1).UnixMilli() - 1
 
 		urlForStandaloneProductUsage, err := ilmtC.req.FetchUsageData(ctx, ilmtC.IlmtConfig.Host, ilmtC.IlmtConfig.Token, CRITERIA_STANDALONE, strings.Split(selectedDate.String(), BLANK_VALUE)[0], strings.Split(selectedDate.String(), BLANK_VALUE)[0])
 		if err != nil {
@@ -145,7 +149,6 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 
 		for _, productResp := range standaloneProductRespObj.StandaloneProductLicenceUsage {
 
-			startDateMillis := startDate.UnixMilli()
 			productId := productResp.ProductId
 			measuredMetricId := productResp.MetricCodeName
 			metricId := productResp.MetricCodeName
@@ -159,7 +162,6 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			sEnc := b64.StdEncoding.EncodeToString(bs)
 			eventIdFinal := "ILMT-" + sEnc
 
-			endDateMillis := endDate.UnixMilli()
 			measuredValue := productResp.HwmQuantity
 			productName := productResp.ProductName
 
@@ -188,13 +190,11 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 				AdditionalAttributes: additionalAttributes,
 			}
 
-			productUsageTransformedEventJsonNew = append(productUsageTransformedEventJsonNew, productUsageTransformedEventData)
+			productUsageTransformedEventJson = append(productUsageTransformedEventJson, productUsageTransformedEventData)
 		}
 
 		for _, prodPartOfBundle := range productPartOfBndlRespObj.ProductPartOfBndlLicenceUsage {
 
-			startDateMillis := startDate.UnixMilli()
-			endDateMillis := endDate.UnixMilli()
 			productId := prodPartOfBundle.ProductId
 			measuredMetricId := prodPartOfBundle.MetricCodeName
 			parentProductId, parentProductName, metricId, err := GetParentProduct(prodPartOfBundle, parentProductRespObj)
@@ -205,7 +205,7 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			host := ilmtC.IlmtConfig.Host[8:38]
 			BELL := '\a'
 
-			eventId := fmt.Sprintf("%d-%d%U%d%U%s%U%d%U%s", startDateMillis, endDateMillis, BELL, productId, BELL, measuredMetricId, BELL, parentProductId, BELL, host)
+			eventId := fmt.Sprintf("%d%U%d%U%s%U%d%U%s", startDateMillis, BELL, productId, BELL, measuredMetricId, BELL, parentProductId, BELL, host)
 			h := sha256.New()
 			h.Write([]byte(eventId))
 			bs := h.Sum(nil)
@@ -243,28 +243,28 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 				MeasuredUsage:        measuredUsage,
 				AdditionalAttributes: additionalAttributes,
 			}
-			productUsageTransformedEventJsonNew = append(productUsageTransformedEventJsonNew, productUsageTransformedEventData)
+			productUsageTransformedEventJson = append(productUsageTransformedEventJson, productUsageTransformedEventData)
 		}
 
 		fileCounter++
 	}
 
-	productUsageTransformedEventNew := ProductUsageTransformedEvent{
-		ProductUsageTransformedEventData: productUsageTransformedEventJsonNew,
+	productUsageTransformedEvent := ProductUsageTransformedEvent{
+		ProductUsageTransformedEventData: productUsageTransformedEventJson,
 	}
-	productUsageTransformedEventNewJson, _ := json.Marshal(productUsageTransformedEventNew)
-	productUsageTransformedEventNewJsonStr := string(productUsageTransformedEventNewJson)
+	productUsageTransformedEventNewJson, _ := json.Marshal(productUsageTransformedEvent)
+	productUsageTransformedEventJsonStr := string(productUsageTransformedEventNewJson)
 
 	// fix to adjust types returned by ILMT and required by RHM
 	measuredValue := regexp.MustCompile(`"measuredValue":\s?(\d*),`)
 	parentProductId := regexp.MustCompile(`"parentProductId":\s?(\d*),`)
 	productId := regexp.MustCompile(`"productId":\s?(\d*),`)
 
-	productUsageTransformedEventNewJsonStr = measuredValue.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"measuredValue\":\"$1\",")
-	productUsageTransformedEventNewJsonStr = parentProductId.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"parentProductId\":\"$1\",")
-	productUsageTransformedEventNewJsonStr = productId.ReplaceAllString(productUsageTransformedEventNewJsonStr, "\"productId\":\"$1\",")
+	productUsageTransformedEventJsonStr = measuredValue.ReplaceAllString(productUsageTransformedEventJsonStr, "\"measuredValue\":\"$1\",")
+	productUsageTransformedEventJsonStr = parentProductId.ReplaceAllString(productUsageTransformedEventJsonStr, "\"parentProductId\":\"$1\",")
+	productUsageTransformedEventJsonStr = productId.ReplaceAllString(productUsageTransformedEventJsonStr, "\"productId\":\"$1\",")
 
-	return fileCounter, productUsageTransformedEventNewJsonStr, nil
+	return fileCounter, productUsageTransformedEventJsonStr, nil
 }
 
 func GetParentProduct(prodPartOfbndl ProductPartOfBndlLicenceUsage, parentProdResp ParentProductResp) (int64, string, string, error) {
