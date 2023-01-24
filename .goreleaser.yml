@@ -1,6 +1,6 @@
 before:
   hooks:
-    - go mod tidy -go=1.17 && go mod tidy -go=1.19.1
+    - go mod tidy -go=1.17 && go mod tidy -go=1.19.5
     - find . -type f -name "*.go" | xargs addlicense -c "IBM Corporation."
 env:
   - CGO_ENABLED=0
