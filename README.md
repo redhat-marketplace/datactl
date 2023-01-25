@@ -102,4 +102,21 @@ If you want to transfer it somewhere else, you can find the tar file under your 
 
 ## Exporting from IBM License Metric Tool sources
 
-TBD
+_Prerequisite_: API Token is required to get data from IBM License Metric Tool (ILMT). Login to your ILMT environment, go to _Profile_ and click _Show token_ under API Token section.
+
+First step is to configure ILMT data source. Execute following command
+
+`datactl sources add ilmt`
+
+and provide ILMT hostname, port number and token
+
+To pull data from ILMT, execute command
+
+`datactl export pull --source-type=ilmt`
+
+First time you will be asked to provide start date. Next time last synchronization date is stored in config file and will be updated to pull data from last synchronization date.
+
+To push data to Red Hat Marketplace execute command
+
+`datactl export push`
+
