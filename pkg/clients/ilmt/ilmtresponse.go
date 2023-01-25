@@ -72,7 +72,7 @@ type ProductUsageTransformedEvent struct {
 }
 
 type ProductUsageTransformedEventData struct {
-	AccountId            string `json:"accountId"`
+	//AccountId            string `json:"accountId"`
 	AdditionalAttributes `json:"additionalAttributes"`
 	EndDate              int64           `json:"end"`
 	StartDate            int64           `json:"start"`

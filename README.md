@@ -8,7 +8,8 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [Getting started](#getting-started)
-- [Export](#export)
+- [Exporting from DataService sources](#exporting-from-dataservice-sources)
+- [Exporting from IBM License Metric Tool sources](#exporting-from-ibm-license-metric-tool-sources)
 
 <!-- markdown-toc end -->
 
@@ -54,15 +55,20 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 
 5. Now you're configured. You can start using the export commands.
 
-## Export
+## Exporting from DataService sources
 
 Recommended approach is to run the commands in this order:
 
 ```sh
 // Must be logged in to the cluster
-oc datactl export pull
 
-// If you're in a connect
+// Add the dataservice as a source, to which you are logged into with your current context
+datactl sources add dataservice --use-default-context --allow-self-signed=true
+
+// Pull the data from dataservice sources
+oc datactl export pull --source-type=dataservice
+
+// If you're connected to the internet
 oc datactl export push
 
 // If no errors from push.
@@ -71,6 +77,11 @@ oc datactl export commit
 
 Let's break down what each one is doing.
 
+`datactl sources add dataservice --use-default-context --allow-self-signed=true`
+
+- Adds the default-context cluster's dataservice as a source for pulling
+- Writes the source data-service-endpoint to `~/.datactl/config`
+
 `oc datactl export pull`
 
 - Pulls files from data service and stores them in a tar file under your `~/.datactl/data` folder.
@@ -78,7 +89,7 @@ Let's break down what each one is doing.
 
 `oc datactl export push`
 
-- Pushes the files pulled to Red Hat Marketplace.
+- Files pulled by the previous command are pushed to Red Hat Marketplace.
 - If this process errors, do not commit. Retry the export push or open a support ticket.
 
 `oc datactl export commit`
@@ -88,3 +99,24 @@ Let's break down what each one is doing.
 - After some time, the files in dataservice will be cleaned up to save space.
 
 If you want to transfer it somewhere else, you can find the tar file under your `~/.datactl/data/` directory.
+
+## Exporting from IBM License Metric Tool sources
+
+_Prerequisite_: API Token is required to get data from IBM License Metric Tool (ILMT). Login to your ILMT environment, go to _Profile_ and click _Show token_ under API Token section.
+
+First step is to configure ILMT data source. Execute following command
+
+`datactl sources add ilmt`
+
+and provide ILMT hostname, port number and token
+
+To pull data from ILMT, execute command
+
+`datactl export pull --source-type=ilmt`
+
+First time you will be asked to provide start date. Next time last synchronization date is stored in config file and will be updated to pull data from last synchronization date.
+
+To push data to Red Hat Marketplace execute command
+
+`datactl export push`
+
