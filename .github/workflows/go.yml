@@ -46,7 +46,7 @@ jobs:
           go install github.com/onsi/gomega/...
 
       - name: Test
-        run: ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
+        run: ginkgo -r --randomize-suites --randomize-all --fail-on-pending --cover --trace --race --show-node-events
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
