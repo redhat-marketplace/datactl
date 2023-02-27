@@ -31,7 +31,7 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog/v2/klogr"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/completion"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/kubectl/pkg/util/term"
@@ -166,7 +166,7 @@ func NewDatactlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	templates.ActsAsRootCommand(cmds, filters, groups...)
 
-	util.SetFactoryForCompletion(f)
+	completion.SetFactoryForCompletion(f)
 
 	cmds.SetGlobalNormalizationFunc(cliflag.WordSepNormalizeFunc)
 
