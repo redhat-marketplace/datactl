@@ -12,14 +12,14 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19.6
+          go-version: 1.19.7
       - name: Ginkgo
         run: |
           go install github.com/onsi/ginkgo/v2/ginkgo
           go install github.com/onsi/gomega/...
 
       - name: Test
-        run: ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
+        run: ginkgo -r --randomize-all --randomize-suites --fail-on-pending --cover --trace --race --show-node-events
   release:
     runs-on: ubuntu-latest
     needs: test
@@ -29,7 +29,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19.6
+          go-version: 1.19.7
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
