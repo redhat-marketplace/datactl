@@ -2,8 +2,8 @@ GO=go
 GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
 GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
-MINIMUM_SUPPORTED_GO_MINOR_VERSION = 17
-MAXIMUM_SUPPORTED_GO_MINOR_VERSION = 17
+MINIMUM_SUPPORTED_GO_MINOR_VERSION = 19
+MAXIMUM_SUPPORTED_GO_MINOR_VERSION = 19
 GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
 
 .DEFAULT_GOAL := install
@@ -68,5 +68,5 @@ goreleaser:
 
 tools:
 	go mod download
-	go install "k8s.io/code-generator/cmd/conversion-gen@v0.19.16"	
-	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0"
+	go install "k8s.io/code-generator/cmd/conversion-gen@v0.24.12"	
+	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0"

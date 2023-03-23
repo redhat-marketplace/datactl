@@ -46,11 +46,12 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 
 4. Add the role-binding to the default service account on operator-namespace.
 
-   Install the role and role binding for the default service account for the `openshift-redhat-marketplace`
-   namespace. The datactl tool will use these by default.
+   Install the ClusterRole and create the ClusterRoleBinding for the default service account for the namespace the IBM Metrics Operator's 
+   DataService is installed to `by default: redhat-marketplace`. The datactl tool will use this service account by default.
 
    ```sh
    oc apply -f resources/service-account-role.yaml // file found in release
+   oc create clusterrolebinding rhm-files --clusterrole=rhm-files --serviceaccount=redhat-marketplace:default
    ```
 
 5. Now you're configured. You can start using the export commands.
@@ -63,7 +64,7 @@ Recommended approach is to run the commands in this order:
 // Must be logged in to the cluster
 
 // Add the dataservice as a source, to which you are logged into with your current context
-datactl sources add dataservice --use-default-context --allow-self-signed=true
+datactl sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
 
 // Pull the data from dataservice sources
 oc datactl export pull --source-type=dataservice

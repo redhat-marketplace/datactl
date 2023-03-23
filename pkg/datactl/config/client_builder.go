@@ -212,13 +212,13 @@ func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*d
 		}
 
 		if dsConfig.Namespace == "" {
-			dsConfig.Namespace = "openshift-redhat-marketplace"
+			dsConfig.Namespace = "redhat-marketplace"
 		}
 
-		sa := serviceaccount.NewServiceAccountClient("openshift-redhat-marketplace", client)
+		sa := serviceaccount.NewServiceAccountClient(dsConfig.Namespace, client)
 
 		// TODO make this paramaterized
-		token, expires, err := sa.NewServiceAccountToken(dsConfig.ServiceAccount, "rhm-data-service.openshift-redhat-marketplace.svc", 3600)
+		token, expires, err := sa.NewServiceAccountToken(dsConfig.ServiceAccount, fmt.Sprintf("rhm-data-service.%s.svc", dsConfig.Namespace), 3600)
 		if err != nil || token == "" {
 			logger.Info("failed to get service account token", "err", err)
 			return nil, err
