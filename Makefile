@@ -43,7 +43,7 @@ mod:
 
 .PHONY: test
 test:
-	ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
+	ginkgo -r --randomize-all --randomize-suites --fail-on-pending --cover --trace --race --show-node-events
 
 .PHONY: generate
 generate: validate-go-version tools

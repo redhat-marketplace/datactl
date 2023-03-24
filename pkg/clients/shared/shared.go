@@ -38,7 +38,7 @@ func NewHttpClient(
 ) *http.Client {
 	client := &http.Client{}
 
-	var roundtripper http.RoundTripper = spdy.NewRoundTripper(tlsConfig, true, true)
+	var roundtripper http.RoundTripper = spdy.NewRoundTripper(tlsConfig)
 
 	for _, apply := range opts {
 		roundtripper = apply(roundtripper)
