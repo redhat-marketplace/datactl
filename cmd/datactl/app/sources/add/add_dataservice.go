@@ -33,16 +33,13 @@ var (
 
 	configInitExample = templates.Examples(i18n.T(`
 		# Initialize the source, using the default context and a self signed cert.
-		{{ .cmd }} sources add dataservice --use-default-context --allow-self-signed=true
+		{{ .cmd }} sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
 
 		# Initialize the config, prompting for a context to select.
 		{{ .cmd }} sources add dataservice
 
 		# Initialize the source, using the default context instead of selecting.
 		{{ .cmd }} sources add --use-default-context
-
-		# Initialize the source, using selecting a non-default namespace of the dataService.
-		{{ .cmd }} sources add --namespace=redhat-marketplace
 `))
 )
 
@@ -68,7 +65,6 @@ func NewCmdAddDataService(rhmFlags *config.ConfigFlags, f cmdutil.Factory, strea
 	cmd.Flags().BoolVar(&o.useDefaultContext, "use-default-context", false, i18n.T("use the default kuberentes context instead of prompting"))
 	cmd.Flags().BoolVar(&o.allowNonSystemCA, "allow-non-system-ca", false, i18n.T("allows non system CA certificates to be added to the dataService config"))
 	cmd.Flags().BoolVar(&o.allowSelfsigned, "allow-self-signed", false, i18n.T("allows self-signed certificates to be added to the dataService configs"))
-	cmd.Flags().StringVar(&o.namespace, "namespace", "redhat-marketplace", i18n.T("set the IBM Metrics Operator dataService namespace"))
 
 	return cmd
 }
@@ -84,7 +80,6 @@ type addDataServiceOptions struct {
 	useDefaultContext bool
 	allowNonSystemCA  bool
 	allowSelfsigned   bool
-	namespace         string
 
 	context string
 
@@ -115,7 +110,7 @@ func (init *addDataServiceOptions) runKubeConnected() error {
 		init.dataServiceConfig.ServiceAccount = "default"
 	}
 
-	init.dataServiceConfig.Namespace = init.namespace
+	init.dataServiceConfig.Namespace = *init.rhmConfigFlags.KubectlConfig.Namespace
 
 	restConfig, err := init.rhmConfigFlags.KubectlConfig.ToRESTConfig()
 	if err != nil {
