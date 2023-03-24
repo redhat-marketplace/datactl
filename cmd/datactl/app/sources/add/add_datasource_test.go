@@ -26,6 +26,7 @@ var _ = Describe("config init", func() {
 		Expect(err).To(HaveOccurred())
 
 		init.allowSelfsigned = true
+		init.dataServiceConfig.InsecureSkipTLSVerify = true
 		err = init.discoverDataServiceCA()
 		Expect(err).To(Succeed())
 		Expect(init.dataServiceConfig.CertificateAuthorityData).ToNot(BeEmpty())

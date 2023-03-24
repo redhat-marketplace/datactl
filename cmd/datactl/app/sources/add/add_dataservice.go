@@ -153,6 +153,8 @@ func (init *addDataServiceOptions) runKubeConnected() error {
 }
 
 func (init *addDataServiceOptions) discoverDataServiceCA() error {
+	// DataService cert uses serving-certs-ca-bundle, so the CA should already be in the pool
+	// via the kube context. A user or test can still specify --insecure-skip-tls-verify
 	conf := &tls.Config{
 		InsecureSkipVerify: init.dataServiceConfig.InsecureSkipTLSVerify,
 	}
