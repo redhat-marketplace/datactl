@@ -2,16 +2,20 @@ package add
 
 import (
 	"os"
+	"path/filepath"
 
 	s "strings"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var _ = Describe("NewCmdAddIlmt", func() {
+	homedir, _ := os.UserHomeDir()
+	configPath := filepath.Join(homedir, ".datactl", "config")
+
 	Context("test updating the config to make sure no error coming in saving the source info in config", func() {
 		It("success", func() {
 
@@ -29,6 +33,11 @@ var _ = Describe("NewCmdAddIlmt", func() {
 			err := o.addSourceDtlsToConfig(o.Host, o.Port, o.Token)
 
 			Expect(err).To(Succeed())
+
+			// cleanup
+			err = os.Remove(configPath)
+			Expect(err).To(Succeed())
+
 		})
 
 	})
@@ -48,14 +57,15 @@ var _ = Describe("NewCmdAddIlmt", func() {
 			o.Complete(nil, nil)
 			o.Validate()
 			o.addSourceDtlsToConfig(o.Host, o.Port, o.Token)
-			configPathComplete := os.Getenv("HOME")
-			configPath := "/.datactl/config"
-			configPathComplete += configPath
-			config, err := os.ReadFile(configPathComplete)
+			config, err := os.ReadFile(configPath)
 			configStr := string(config)
 			Expect(err).To(Succeed())
 			Expect(true).To(Equal(s.Contains(configStr, "source-name: ilmtunittesting2870.ibm.com")))
 			Expect(true).To(Equal(s.Contains(configStr, "source-type: ILMT")))
+
+			// cleanup
+			err = os.Remove(configPath)
+			Expect(err).To(Succeed())
 		})
 
 	})
