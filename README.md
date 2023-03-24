@@ -78,10 +78,11 @@ oc datactl export commit
 
 Let's break down what each one is doing.
 
-`datactl sources add dataservice --use-default-context --allow-self-signed=true`
+`datactl sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace`
 
 - Adds the default-context cluster's dataservice as a source for pulling
 - Writes the source data-service-endpoint to `~/.datactl/config`
+- The DataService to connect to is in the `redhat-marketplace` namespace
 
 `oc datactl export pull`
 
