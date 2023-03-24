@@ -154,7 +154,7 @@ func (init *addDataServiceOptions) runKubeConnected() error {
 
 func (init *addDataServiceOptions) discoverDataServiceCA() error {
 	conf := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: init.dataServiceConfig.InsecureSkipTLSVerify,
 	}
 
 	pool, err := x509.SystemCertPool()
