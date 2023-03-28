@@ -4,13 +4,17 @@ import (
 	"crypto/x509"
 	"strings"
 
+	"github.com/gotidy/ptr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var _ = Describe("config init", func() {
+
 	It("should handle self signed certificates", func() {
 		server := ghttp.NewTLSServer()
 
@@ -18,6 +22,13 @@ var _ = Describe("config init", func() {
 		url = strings.TrimPrefix(url, "https://")
 
 		init := &addDataServiceOptions{}
+
+		init.rhmConfigFlags = &config.ConfigFlags{}
+
+		init.rhmConfigFlags.KubectlConfig = &genericclioptions.ConfigFlags{
+			Insecure: ptr.Bool(true),
+		}
+
 		init.dataServiceConfig = &api.DataServiceEndpoint{
 			Host: url,
 		}
@@ -26,7 +37,6 @@ var _ = Describe("config init", func() {
 		Expect(err).To(HaveOccurred())
 
 		init.allowSelfsigned = true
-		init.dataServiceConfig.InsecureSkipTLSVerify = true
 		err = init.discoverDataServiceCA()
 		Expect(err).To(Succeed())
 		Expect(init.dataServiceConfig.CertificateAuthorityData).ToNot(BeEmpty())

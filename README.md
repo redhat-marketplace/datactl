@@ -64,7 +64,7 @@ Recommended approach is to run the commands in this order:
 // Must be logged in to the cluster
 
 // Add the dataservice as a source, to which you are logged into with your current context
-datactl sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
+datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace
 
 // Pull the data from dataservice sources
 oc datactl export pull --source-type=dataservice
@@ -78,7 +78,7 @@ oc datactl export commit
 
 Let's break down what each one is doing.
 
-`oc datactl sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace`
+`oc datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace`
 
 - Adds the default-context cluster's dataservice as a source for pulling
 - Writes the source data-service-endpoint to `~/.datactl/config`

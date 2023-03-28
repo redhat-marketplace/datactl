@@ -33,8 +33,11 @@ var (
 		The command will attempt to resolve the Dataservice URL using the kubernetes context provided.`))
 
 	configInitExample = templates.Examples(i18n.T(`
-		# Initialize the source, using the default context and a self signed cert.
-		{{ .cmd }} sources add dataservice --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
+		# Initialize the source, using the default context.
+		{{ .cmd }} sources add dataservice --use-default-context --namespace=redhat-marketplace
+
+		# Initialize the source, using the default context and insecure self signed cert.
+		{{ .cmd }} sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace
 
 		# Initialize the config, prompting for a context to select.
 		{{ .cmd }} sources add dataservice
