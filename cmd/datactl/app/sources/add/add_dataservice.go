@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"emperror.dev/errors"
+	"github.com/gotidy/ptr"
 	"github.com/manifoldco/promptui"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
@@ -156,7 +157,7 @@ func (init *addDataServiceOptions) discoverDataServiceCA() error {
 	// DataService cert uses serving-certs-ca-bundle, so the CA should already be in the pool
 	// via the kube context. A user or test can still specify --insecure-skip-tls-verify
 	conf := &tls.Config{
-		InsecureSkipVerify: init.dataServiceConfig.InsecureSkipTLSVerify,
+		InsecureSkipVerify: ptr.ToBool(init.rhmConfigFlags.KubectlConfig.Insecure),
 	}
 
 	pool, err := x509.SystemCertPool()
