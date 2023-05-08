@@ -22,9 +22,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2/klogr"
-	"k8s.io/kubectl/pkg/util/i18n"
-
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/util/i18n"
 )
 
 var (
@@ -33,7 +32,7 @@ var (
 
 func NewCmdExport(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "export",
+		Use:                   "export SUBCOMMAND",
 		DisableFlagsInUseLine: true,
 		Short:                 i18n.T("Export metrics from Dataservice Operator"),
 		Run: func(cmd *cobra.Command, args []string) {

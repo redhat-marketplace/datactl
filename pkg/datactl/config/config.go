@@ -72,6 +72,15 @@ var (
 	UseModifyConfigLock = true
 )
 
+type ModifyableConfig struct {
+	*datactlapi.Config
+	configAccess ConfigAccess
+}
+
+func (m *ModifyableConfig) Save() error {
+	return ModifyConfig(m.configAccess, *m.Config, true)
+}
+
 func ModifyConfig(configAccess ConfigAccess, newConfig datactlapi.Config, relativizePaths bool) error {
 	if UseModifyConfigLock {
 		possibleSources := configAccess.GetLoadingPrecedence()
@@ -167,6 +176,81 @@ func ModifyConfig(configAccess ConfigAccess, newConfig datactlapi.Config, relati
 		return err
 	}
 
+	//added for ilmt end point
+	newIlmtEndpt := map[string]*datactlapi.ILMTEndpoint{}
+
+	for key, ilmtEndpt := range newConfig.ILMTEndpoints {
+		startingIlmtEndpt, exists := startingConfig.ILMTEndpoints[key]
+		destinationFile := ilmtEndpt.LocationOfOrigin
+
+		if len(destinationFile) == 0 {
+			destinationFile = configAccess.GetDefaultFilename()
+		}
+
+		if startingIlmtEndpt == nil {
+			startingIlmtEndpt = &datactlapi.ILMTEndpoint{}
+		}
+
+		if !reflect.DeepEqual(newIlmtEndpt[key], startingIlmtEndpt) || !exists {
+			newIlmtEndpt[key] = ilmtEndpt
+			newIlmtEndpt[key].LocationOfOrigin = destinationFile
+		}
+	}
+
+	if len(newIlmtEndpt) != 0 {
+		if err := writeConfig(configAccess,
+			func(in *datactlapi.Config) (bool, error) {
+				in.ILMTEndpoints = newIlmtEndpt
+				return true, nil
+			}); err != nil {
+
+			return err
+		}
+	}
+
+	//added for source
+	newSources := map[string]*datactlapi.Source{}
+
+	for key, source := range newConfig.Sources {
+		startingSource, exists := startingConfig.Sources[key]
+		destinationFile := source.LocationOfOrigin
+
+		if len(destinationFile) == 0 {
+			destinationFile = configAccess.GetDefaultFilename()
+		}
+
+		if startingSource == nil {
+			startingSource = &datactlapi.Source{}
+		}
+
+		if !reflect.DeepEqual(newSources[key], startingSource) || !exists {
+			newSources[key] = source
+			newSources[key].LocationOfOrigin = destinationFile
+		}
+	}
+
+	if len(newSources) != 0 {
+		if err := writeConfig(configAccess,
+			func(in *datactlapi.Config) (bool, error) {
+				in.Sources = newSources
+				return true, nil
+			}); err != nil {
+
+			return err
+		}
+	}
+
+	if err := writeConfig(configAccess,
+		func(in *datactlapi.Config) (bool, error) {
+			if !reflect.DeepEqual(in, startingConfig.CurrentMeteringExport) {
+				in.CurrentMeteringExport = newConfig.CurrentMeteringExport
+				return true, nil
+			}
+			return false, nil
+		}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -213,7 +297,6 @@ func writeConfig(
 		if err != nil {
 			return err
 		}
-
 		writeFile, err := mutate(currConfig)
 
 		if !writeFile {
@@ -226,7 +309,6 @@ func writeConfig(
 
 		return nil
 	}
-
 	return errors.New("no config found to write preferences")
 }
 

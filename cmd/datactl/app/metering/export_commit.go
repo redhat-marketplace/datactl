@@ -18,16 +18,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/gotidy/ptr"
+	"github.com/redhat-marketplace/datactl/pkg/bundle"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
-	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/metering"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
+	"github.com/redhat-marketplace/datactl/pkg/printers"
+	"github.com/redhat-marketplace/datactl/pkg/printers/output"
+	"github.com/redhat-marketplace/datactl/pkg/sources"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
@@ -95,11 +94,13 @@ type exportCommitOptions struct {
 	dataService  dataservice.Client
 
 	currentMeteringExport *datactlapi.MeteringExport
-	bundle                *metering.BundleFile
+	bundle                *bundle.BundleFile
 
-	ToPrinter func(string) (printers.ResourcePrinter, error)
+	printer printers.Printer
 
 	genericclioptions.IOStreams
+
+	sources.Factory
 }
 
 func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error {
@@ -111,32 +112,28 @@ func (c *exportCommitOptions) Complete(cmd *cobra.Command, args []string) error 
 		return err
 	}
 
-	c.dataService, err = c.rhmConfigFlags.DataServiceClient()
-	if err != nil {
-		return err
-	}
-
 	c.currentMeteringExport, err = c.rhmConfigFlags.MeteringExport()
 	if err != nil {
 		return err
 	}
 
-	c.bundle, err = metering.NewBundleFromExport(c.currentMeteringExport)
+	c.bundle, err = bundle.NewBundleFromExport(c.currentMeteringExport)
 	if err != nil {
 		return err
 	}
 
-	c.ToPrinter = func(operation string) (printers.ResourcePrinter, error) {
-		c.PrintFlags.NamePrintFlags.Operation = operation
-		return c.PrintFlags.ToPrinter()
+	c.PrintFlags.NamePrintFlags.Operation = "commit"
+
+	c.printer, err = printers.NewPrinter(c.Out, c.PrintFlags)
+
+	if err != nil {
+		return err
 	}
 
-	if c.PrintFlags.OutputFormat == nil || *c.PrintFlags.OutputFormat == "wide" || *c.PrintFlags.OutputFormat == "" {
-		c.humanOutput = true
-		c.PrintFlags.OutputFormat = ptr.String("wide")
-	} else {
-		output.DisableColor()
-	}
+	c.Factory = (&sources.SourceFactoryBuilder{}).
+		SetConfigFlags(c.rhmConfigFlags).
+		SetPrinter(c.printer).
+		Build()
 
 	return nil
 }
@@ -149,29 +146,15 @@ func (c *exportCommitOptions) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	bundle, err := metering.NewBundle(c.currentMeteringExport.FileName)
-	if err != nil {
-		return err
-	}
+	defer c.bundle.Close()
 
-	defer bundle.Close()
+	c.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+		p := ho
 
-	print, err := c.ToPrinter("commit")
-	if err != nil {
-		return err
-	}
+		if c.dryRun {
+			p = ho.WithDetails("dryRun", true)
+		}
 
-	writer := printers.GetNewTabWriter(c.Out)
-
-	print = output.NewActionCLITableOrStruct(c.PrintFlags, print)
-
-	p := output.NewHumanOutput()
-
-	if c.dryRun {
-		p = p.WithDetails("dryRun", true)
-	}
-
-	if c.humanOutput {
 		p = p.WithDetails("cluster", c.currentMeteringExport.DataServiceCluster)
 		p.Titlef("%s", i18n.T("commit started"))
 
@@ -181,65 +164,62 @@ func (c *exportCommitOptions) Run() error {
 
 		p = p.Sub()
 		p.WithDetails("exportFile", c.currentMeteringExport.FileName).Infof(i18n.T("file commit status:"))
-	}
+		return p
+	})
 
-	errs := map[string]error{}
+	errs := []error{}
 	committed := 0
 
-	for _, file := range c.currentMeteringExport.Files {
-		file.Action = dataservicev1.Commit
-		file.Result = dataservicev1.Ok
-
-		if c.dryRun || file.Committed == true {
-			if c.dryRun {
-				file.Result = dataservicev1.DryRun
-			}
-			print.PrintObj(file, writer)
-			writer.Flush()
-			continue
-		}
-
-		err := c.dataService.DeleteFile(ctx, file.Id)
+	for name := range c.rhmRawConfig.Sources {
+		s := c.rhmRawConfig.Sources[name]
+		source, err := c.Factory.FromSource(*s)
 		if err != nil {
-			file.Error = err.Error()
-			file.Committed = false
-			file.Result = dataservicev1.Error
-			print.PrintObj(file, writer)
-			writer.Flush()
-			errs[file.Name] = err
+			errs = append(errs, err)
 			continue
 		}
 
-		file.Error = ""
-		file.Committed = true
-		committed = committed + 1
-		print.PrintObj(file, writer)
-		writer.Flush()
+		commitSource, ok := source.(sources.CommitableSource)
+
+		if !ok {
+			continue
+		}
+
+		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
+			p.Titlef("%s", i18n.T("commit started for source"))
+			return p
+		})
+
+		count, err := commitSource.Commit(ctx, c.currentMeteringExport, c.bundle, sources.EmptyOptions())
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p.WithDetails("count", count).Infof(i18n.T("commit complete"))
+			return p
+		})
 	}
 
-	err = bundle.Close()
+	err := c.bundle.Close()
 	if err != nil {
 		return err
 	}
 
-	err = bundle.Compact(nil)
+	err = c.bundle.Compact(nil)
 	if err != nil {
 		return err
 	}
 
-	writer.Flush()
-
-	if c.humanOutput {
+	c.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+		p := ho
 		p.WithDetails("committed", committed, "files", len(c.currentMeteringExport.Files)).Infof(i18n.T("commit finished"))
 
 		if len(errs) != 0 {
 			p.Errorf(nil, "errors have occurred")
-			p2 := p.Sub()
-			for name, err := range errs {
-				p2.WithDetails("name", name).Errorf(nil, err.Error())
-			}
 		}
-	}
+		return p
+	})
 
 	// if dryRun, stop early
 	if c.dryRun {

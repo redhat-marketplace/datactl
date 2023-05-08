@@ -19,11 +19,12 @@ import (
 	"io"
 	"sync"
 
-	"emperror.dev/errors"
 	"github.com/redhat-marketplace/datactl/pkg/clients"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	"github.com/redhat-marketplace/datactl/pkg/clients/ilmt"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
 	"github.com/redhat-marketplace/datactl/pkg/clients/serviceaccount"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -93,18 +94,32 @@ func (config *DeferredLoadingClientConfig) MarketplaceClientConfig() (*marketpla
 	return mktpl, err
 }
 
-func (config *DeferredLoadingClientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig, error) {
+func (config *DeferredLoadingClientConfig) DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error) {
 	mergedClientConfig, err := config.createClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	ds, err := mergedClientConfig.DataServiceClientConfig()
+	ds, err := mergedClientConfig.DataServiceClientConfig(source)
 	if clientcmd.IsEmptyConfig(err) {
 		return nil, genericclioptions.ErrEmptyConfig
 	}
 
 	return ds, err
+}
+
+func (config *DeferredLoadingClientConfig) IlmtClientConfig(source api.Source) (*ilmt.IlmtConfig, error) {
+	mergedClientConfig, err := config.createClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	ilmt, err := mergedClientConfig.IlmtClientConfig(source)
+	if clientcmd.IsEmptyConfig(err) {
+		return nil, genericclioptions.ErrEmptyConfig
+	}
+
+	return ilmt, err
 }
 
 func (config *DeferredLoadingClientConfig) ConfigAccess() ConfigAccess {
@@ -144,7 +159,9 @@ func NewNonInteractiveClientConfig(config datactlapi.Config, contextName string,
 	}
 }
 
-// DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config, options overrides, and an optional fallbackReader for auth information
+// DirectClientConfig is a ClientConfig interface that is backed by a clientcmdapi.Config,
+// options overrides, and an optional fallbackReader for auth information.
+// Is responsible for generating the result.
 type DirectClientConfig struct {
 	config        datactlapi.Config
 	contextName   string
@@ -167,27 +184,16 @@ func (config *DirectClientConfig) MarketplaceClientConfig() (*marketplace.Market
 	return mktplConfig, nil
 }
 
-func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataServiceConfig, error) {
-	kubeConfig, err := config.kubectlConfig.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	context, ok := kubeConfig.Contexts[kubeConfig.CurrentContext]
-
-	if !ok {
-		return nil, errors.New("current kubectl context does now have a configuration")
-	}
-
+func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*dataservice.DataServiceConfig, error) {
 	datactlConfig, err := config.RawConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	dsConfig, exists := datactlConfig.DataServiceEndpoints[context.Cluster]
+	dsConfig, exists := datactlConfig.DataServiceEndpoints[source.Name]
 
 	if !exists {
-		return nil, fmt.Errorf("data-service is not configured, run %q", "datactl config init")
+		return nil, fmt.Errorf("data-service with name %s not found", source.Name)
 	}
 
 	restConfig, err := config.kubectlConfig.ToRESTConfig()
@@ -206,13 +212,13 @@ func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataSe
 		}
 
 		if dsConfig.Namespace == "" {
-			dsConfig.Namespace = "openshift-redhat-marketplace"
+			dsConfig.Namespace = "redhat-marketplace"
 		}
 
-		sa := serviceaccount.NewServiceAccountClient("openshift-redhat-marketplace", client)
+		sa := serviceaccount.NewServiceAccountClient(dsConfig.Namespace, client)
 
 		// TODO make this paramaterized
-		token, expires, err := sa.NewServiceAccountToken(dsConfig.ServiceAccount, "rhm-data-service.openshift-redhat-marketplace.svc", 3600)
+		token, expires, err := sa.NewServiceAccountToken(dsConfig.ServiceAccount, fmt.Sprintf("rhm-data-service.%s.svc", dsConfig.Namespace), 3600)
 		if err != nil || token == "" {
 			logger.Info("failed to get service account token", "err", err)
 			return nil, err
@@ -232,6 +238,28 @@ func (config *DirectClientConfig) DataServiceClientConfig() (*dataservice.DataSe
 	return ds, nil
 }
 
+func (config *DirectClientConfig) IlmtClientConfig(source api.Source) (*ilmt.IlmtConfig, error) {
+	datactlConfig, err := config.RawConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	ilmtConfig, exists := datactlConfig.ILMTEndpoints[source.Name]
+
+	if !exists {
+		return nil, fmt.Errorf("ILMT host with name %s not found", source.Name)
+	}
+
+	ilmt, err := clients.ProvideIlmtSource(ilmtConfig)
+
+	if err != nil {
+		logger.Info("failed to get ILMT source", "err", err)
+		return nil, err
+	}
+
+	return ilmt, nil
+}
+
 func (config *DirectClientConfig) ConfigAccess() ConfigAccess {
 	return config.configAccess
 }
@@ -244,27 +272,11 @@ func (config *DirectClientConfig) MeteringExport() (*datactlapi.MeteringExport, 
 		return nil, err
 	}
 
-	kubeConfig, err := config.kubectlConfig.ToRawKubeConfigLoader().RawConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	context, ok := kubeConfig.Contexts[kubeConfig.CurrentContext]
-
-	if !ok {
-		return nil, errors.New("current kubectl context does now have a configuration")
-	}
-
-	currentMeteringExport, ok = datactlConfig.MeteringExports[context.Cluster]
-
-	if !ok {
-		currentMeteringExport = &datactlapi.MeteringExport{
-			DataServiceCluster: context.Cluster,
-		}
-
-		datactlConfig.MeteringExports[context.Cluster] = currentMeteringExport
+	if datactlConfig.CurrentMeteringExport == nil {
+		currentMeteringExport = &datactlapi.MeteringExport{}
+		datactlConfig.CurrentMeteringExport = currentMeteringExport
 		return currentMeteringExport, err
 	}
 
-	return currentMeteringExport, err
+	return datactlConfig.CurrentMeteringExport, err
 }

@@ -28,3 +28,5 @@
 *.coverprofile
 dist/
 version.txt
+
+bin/

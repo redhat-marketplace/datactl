@@ -293,7 +293,7 @@ func (d *dataServiceClient) checkResponse(function string, resp *http.Response) 
 			"func", function,
 			"statusCode", resp.StatusCode,
 			"body", string(body))
-		return errors.NewWithDetails("failed request", "status", resp.StatusCode, "body", string(body))
+		return errors.NewWithDetails("failed request", "status", http.StatusText(resp.StatusCode), "body", strings.TrimSpace(string(body)))
 	}
 
 	return nil

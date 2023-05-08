@@ -19,7 +19,9 @@ import (
 
 	"github.com/gotidy/ptr"
 	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	ilmt "github.com/redhat-marketplace/datactl/pkg/clients/ilmt"
 	"github.com/redhat-marketplace/datactl/pkg/clients/marketplace"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -45,8 +47,11 @@ type ConfigFlags struct {
 	// dataservice
 	DataServiceCAFile *string
 
-	dataServiceClient     dataservice.Client
+	dataServiceClient     map[string]dataservice.Client
 	dataServiceClientLock sync.Mutex
+
+	ilmtClient     map[string]ilmt.Client
+	ilmtClientLock sync.Mutex
 
 	meteringExportLock sync.Mutex
 	meteringExport     *datactlapi.MeteringExport
@@ -106,26 +111,56 @@ func (f *ConfigFlags) toRawConfigLoader() ClientConfig {
 	}
 }
 
-func (f *ConfigFlags) DataServiceClient() (dataservice.Client, error) {
-	return f.toPersistentDataServiceClient()
+func (f *ConfigFlags) DataServiceClient(source api.Source) (dataservice.Client, error) {
+	return f.toPersistentDataServiceClient(source)
 }
 
-func (f *ConfigFlags) toPersistentDataServiceClient() (dataservice.Client, error) {
+func (f *ConfigFlags) toPersistentDataServiceClient(source api.Source) (dataservice.Client, error) {
 	f.dataServiceClientLock.Lock()
 	defer f.dataServiceClientLock.Unlock()
 
-	if f.dataServiceClient != nil {
-		return f.dataServiceClient, nil
+	if f.dataServiceClient == nil {
+		f.dataServiceClient = make(map[string]dataservice.Client)
 	}
 
-	config, err := f.RawPersistentConfigLoader().DataServiceClientConfig()
+	if c, ok := f.dataServiceClient[source.Name]; ok {
+		return c, nil
+	}
+
+	config, err := f.RawPersistentConfigLoader().DataServiceClientConfig(source)
 
 	if err != nil {
 		return nil, err
 	}
 
-	f.dataServiceClient = dataservice.NewClient(config)
-	return f.dataServiceClient, nil
+	f.dataServiceClient[source.Name] = dataservice.NewClient(config)
+	return f.dataServiceClient[source.Name], nil
+}
+
+func (f *ConfigFlags) IlmtClient(source api.Source) (ilmt.Client, error) {
+	return f.toPersistentIlmtClient(source)
+}
+
+func (f *ConfigFlags) toPersistentIlmtClient(source api.Source) (ilmt.Client, error) {
+	f.ilmtClientLock.Lock()
+	defer f.ilmtClientLock.Unlock()
+
+	if f.ilmtClient == nil {
+		f.ilmtClient = make(map[string]ilmt.Client)
+	}
+
+	if c, ok := f.ilmtClient[source.Name]; ok {
+		return c, nil
+	}
+
+	config, err := f.RawPersistentConfigLoader().IlmtClientConfig(source)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f.ilmtClient[source.Name] = ilmt.NewClient(config)
+	return f.ilmtClient[source.Name], nil
 }
 
 func (f *ConfigFlags) MarketplaceClient() (marketplace.Client, error) {

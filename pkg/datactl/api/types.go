@@ -26,9 +26,15 @@ import (
 type Config struct {
 	MarketplaceEndpoint UploadAPI `json:"upload-api"`
 
+	CurrentMeteringExport *MeteringExport `json:"current-metering-export,omitempty"`
+
 	MeteringExports map[string]*MeteringExport `json:"metering-export-history,omitempty"`
 
-	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints"`
+	DataServiceEndpoints map[string]*DataServiceEndpoint `json:"data-service-endpoints,omitempty"`
+
+	ILMTEndpoints map[string]*ILMTEndpoint `json:"ilmt-endpoints,omitempty"`
+
+	Sources map[string]*Source `json:"sources,omitempty"`
 }
 
 type MeteringExport struct {
@@ -49,6 +55,22 @@ type MeteringExport struct {
 
 	// +k8s:conversion-gen=false
 	Pushed bool `json:"-"`
+}
+
+type Source struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string `json:"-"`
+
+	Name string `json:"source-name"`
+
+	Type SourceType `json:"source-type"`
+
+	LastAccessTime metav1.Time `json:"last-access-time,omitempty"`
+}
+
+func (s *Source) String() string {
+	return s.Type.String() + ":" + s.Name
 }
 
 // DEPRECATED
@@ -131,6 +153,21 @@ type DataServiceEndpoint struct {
 	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthority
 	// +optional
 	CertificateAuthorityData []byte `json:"certificate-authority-data,omitempty"`
+}
+
+type ILMTEndpoint struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+
+	Host string `json:"host"`
+
+	Port string `json:"port"`
+
+	// Token is base64 encoded token in the config file, env var, or token argument
+	Token string `json:"token"`
+
+	LastPulldate string `json:"last-pull-date"`
 }
 
 func NewConfig() *Config {

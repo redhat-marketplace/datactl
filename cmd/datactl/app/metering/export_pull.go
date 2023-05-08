@@ -1,34 +1,24 @@
-// Copyright 2021 IBM Corporation.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package metering
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"strings"
 	"time"
 
-	"emperror.dev/errors"
-	"github.com/gotidy/ptr"
-	"github.com/redhat-marketplace/datactl/pkg/clients/dataservice"
+	"github.com/manifoldco/promptui"
+	"github.com/redhat-marketplace/datactl/pkg/bundle"
+	"github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
-	dataservicev1 "github.com/redhat-marketplace/datactl/pkg/datactl/api/dataservice/v1"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/config"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/metering"
-	"github.com/redhat-marketplace/datactl/pkg/datactl/output"
+	"github.com/redhat-marketplace/datactl/pkg/printers"
+	"github.com/redhat-marketplace/datactl/pkg/printers/output"
+	"github.com/redhat-marketplace/datactl/pkg/sources"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/printers"
 	clientapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -38,29 +28,34 @@ import (
 
 var (
 	pullLong = templates.LongDesc(i18n.T(`
-		Pulls files from the Dataservice on the cluster.
+		Pulls data from all available sources. Filtering by source name and type is available.
 
-		Prints a table of the files pulled with basic information. The --before or --after flags
-		can be used to change the date range that the files are pulled from. All dates must be in
-		RFC3339 format as defined by the Golang time package.
+		Prints a table of the files pulled with basic information.
 
-		If the files have already been pulled then using the --include-deleted flag may be necessary.`))
+		Please use the sources commands to add new sources for pulling.`))
 
 	pullExample = templates.Examples(i18n.T(`
-		# Pull all available files from the current dataservice cluster to Usage
-		{{ .cmd }} export pull
+		# Pull all available data from all available sources and will prompt for start date in case of pull from ILMT
+		{{ .cmd }} export pull all
 
-		# Pull all files before November 14th, 2021
-		{{ .cmd }} export pull --before 2021-11-15T00:00:00Z
+		# Pull all data from a particular source-type. source-type flag is optional, if not given will pull for all the sources.
+		{{ .cmd }} export pull all --source-type dataService/ilmt
 
-		# Pull all files after November 14th, 2021
-		{{ .cmd }} export pull
+		# Pull all data from a particular source. source-name flag is optional, if not given will pull for all the sources
+		{{ .cmd }} export pull all --source-name my-dataservice-cluster/my-ilmt-server-hostname
 
-		# Pull all files between November 14th, 2021 and November 15th, 2021
-		{{ .cmd }} export pull --after 2021-11-14T00:00:00Z --before 2021-11-15T00:00:00Z
+		# Pull all data from a particular source and source type. source-type & source-name flags are optional, if not given will pull for all the sources
+		{{ .cmd }} export pull all -source-type dataService/ilmt --source-name my-dataservice-cluster/my-ilmt-server-hostname
 
-		# Pull all deleted files
-		{{ .cmd }} export pull --include-deleted`))
+		# Pull all data from a particular source and source type. startdate and enddate flags are optional, if startdate, enddate not given for ILMT source will asks for prompt.
+		{{ .cmd }} export pull all -source-type dataService/ilmt --source-name my-dataservice-cluster/my-ilmt-server-hostname --start-date 2022-02-04 --end-date 2022-06-02
+`))
+)
+
+const (
+	EMPTY     string = ""
+	StartDate        = "startDate"
+	EndDate          = "endDate"
 )
 
 func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
@@ -71,9 +66,9 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	}
 
 	cmd := &cobra.Command{
-		Use:                   "pull [(--before DATE) (--after DATE) (--include-deleted)]",
+		Use:                   "pull all [(--source-type SOURCE_TYPE) (--source-name SOURCE_NAME) (--startdate STARTDATE) (--enddate ENDDATE)]",
 		DisableFlagsInUseLine: true,
-		Short:                 i18n.T("Pulls files from Dataservice Operator"),
+		Short:                 i18n.T("Pulls files from Dataservice Operator or IBM License Metric Tool"),
 		Long:                  output.ReplaceCommandStrings(pullLong),
 		Example:               output.ReplaceCommandStrings(pullExample),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -84,9 +79,11 @@ func NewCmdExportPull(rhmFlags *config.ConfigFlags, f cmdutil.Factory, ioStreams
 	}
 
 	o.PrintFlags.AddFlags(cmd)
-	cmd.Flags().BoolVar(&o.includeDeleted, "include-deleted", false, i18n.T("include deleted files"))
-	cmd.Flags().StringVar(&o.beforeDate, "before", "", i18n.T("pull files before date"))
-	cmd.Flags().StringVar(&o.afterDate, "after", "", i18n.T("pull files after date"))
+
+	cmd.Flags().StringVar(&o.sourceType, "source-type", EMPTY, i18n.T("Source Name"))
+	cmd.Flags().StringVar(&o.sourceName, "source-name", EMPTY, i18n.T("Source Type"))
+	cmd.Flags().StringVar(&o.startDate, "start-date", EMPTY, i18n.T("Start Date"))
+	cmd.Flags().StringVar(&o.endDate, "end-date", EMPTY, i18n.T("End Date"))
 
 	cmd.Flags().MarkHidden("label-columns")
 	cmd.Flags().MarkHidden("sort-by")
@@ -101,90 +98,153 @@ type exportPullOptions struct {
 	rhmConfigFlags *config.ConfigFlags
 	PrintFlags     *get.PrintFlags
 
-	//flags
-	includeDeleted        bool
-	beforeDate, afterDate string
+	// flags
+	sourceName, sourceType string
 
-	//derivedFlags
-	humanOutput             bool
-	beforeDateT, afterDateT time.Time
+	//start & end date
+	startDate, endDate string
 
 	//internal
 	args      []string
 	rawConfig clientapi.Config
 
-	rhmRawConfig *datactlapi.Config
-	dataService  dataservice.Client
-
-	ToPrinter func(string) (printers.ResourcePrinter, error)
-
-	bundle                *metering.BundleFile
-	currentMeteringExport *datactlapi.MeteringExport
-	clusterName           string
+	printer printers.Printer
 
 	genericclioptions.IOStreams
+	rhmRawConfig *datactlapi.Config
+
+	sources.Factory
 }
 
 func (e *exportPullOptions) Complete(cmd *cobra.Command, args []string) error {
 	e.args = args
-
 	var err error
 	e.rhmRawConfig, err = e.rhmConfigFlags.RawPersistentConfigLoader().RawConfig()
 	if err != nil {
 		return err
 	}
 
-	e.dataService, err = e.rhmConfigFlags.DataServiceClient()
+	e.PrintFlags.NamePrintFlags.Operation = "pull"
+
+	e.printer, err = printers.NewPrinter(e.Out, e.PrintFlags)
+
 	if err != nil {
 		return err
 	}
 
-	e.ToPrinter = func(operation string) (printers.ResourcePrinter, error) {
-		e.PrintFlags.NamePrintFlags.Operation = operation
-		return e.PrintFlags.ToPrinter()
-	}
-
-	e.currentMeteringExport, err = e.rhmConfigFlags.MeteringExport()
-	if err != nil {
-		return err
-	}
-
-	e.bundle, err = metering.NewBundleFromExport(e.currentMeteringExport)
-	if err != nil {
-		return err
-	}
-
-	if e.PrintFlags.OutputFormat == nil || *e.PrintFlags.OutputFormat == "wide" || *e.PrintFlags.OutputFormat == "" {
-		e.humanOutput = true
-		e.PrintFlags.OutputFormat = ptr.String("wide")
-	} else {
-		output.DisableColor()
-	}
-
-	if e.beforeDate != "" {
-		e.beforeDateT, err = time.Parse(time.RFC3339, e.beforeDate)
-		if err != nil {
-			return errors.Wrapf(err, "provided before time %s does not fit into RFC3339 layout %s", e.beforeDate, time.RFC3339)
-		}
-	}
-
-	if e.afterDate != "" {
-		e.afterDateT, err = time.Parse(time.RFC3339, e.afterDate)
-		if err != nil {
-			return errors.Wrapf(err, "provided after time %s does not fit into RFC3339 layout %s", e.afterDate, time.RFC3339)
-		}
-	}
+	e.Factory = (&sources.SourceFactoryBuilder{}).
+		SetConfigFlags(e.rhmConfigFlags).
+		SetPrinter(e.printer).
+		Build()
 
 	return nil
 }
 
 func (e *exportPullOptions) Validate() error {
-	if e.currentMeteringExport == nil || e.currentMeteringExport.FileName == "" {
-		return errors.New("command requires a current export file")
-	}
+	for name := range e.rhmRawConfig.Sources {
+		s := e.rhmRawConfig.Sources[name]
 
-	if e.bundle == nil {
-		return errors.New("command requires a current export bundle file")
+		switch s.Type {
+		case api.ILMT:
+			if e.startDate == EMPTY {
+				if e.rhmRawConfig.ILMTEndpoints[s.Name].LastPulldate == EMPTY {
+					startDate, err := e.promptStartDate()
+					if err != nil {
+						e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+							p := ho
+							p.Errorf(err, i18n.T(err.Error()))
+							return p
+						})
+						os.Exit(1)
+					}
+					if startDate == EMPTY {
+						e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+							p := ho
+							p.Infof(i18n.T("Startdate mandatory to provide in case of pulling data from source first time"))
+							return p
+						})
+						os.Exit(1)
+					}
+					e.startDate = startDate
+				} else {
+					e.startDate = e.rhmRawConfig.ILMTEndpoints[s.Name].LastPulldate
+				}
+			}
+
+			re := regexp.MustCompile(`((19|20)\d\d)-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[01])`)
+			startDateMatched := re.MatchString(e.startDate)
+			if !startDateMatched {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Infof(i18n.T("Startdate must be in format yyyy-mm-dd"))
+					return p
+				})
+				os.Exit(1)
+			}
+
+			startDate, err := time.Parse("2006-01-02", e.startDate)
+			if err != nil {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Errorf(err, i18n.T(err.Error()))
+					return p
+				})
+				os.Exit(1)
+			}
+			isStartDateCheckFailed := startDate.After(time.Now().AddDate(0, 0, -1))
+			if isStartDateCheckFailed {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Infof(i18n.T("Start date must not be greater than yesterday date"))
+					return p
+				})
+				os.Exit(1)
+			}
+
+			if e.endDate == EMPTY {
+				yesterdayDate := fmt.Sprintf("%04d-%02d-%02d", time.Now().AddDate(0, 0, -1).Year(), time.Now().AddDate(0, 0, -1).Month(), time.Now().AddDate(0, 0, -1).Day())
+				e.endDate = yesterdayDate
+			}
+
+			endDateMatched := re.MatchString(e.endDate)
+			if !endDateMatched {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Infof(i18n.T("Enddate must be in format yyyy-mm-dd"))
+					return p
+				})
+				os.Exit(1)
+			}
+
+			endDate, err := time.Parse("2006-01-02", e.endDate)
+			if err != nil {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Errorf(err, i18n.T(err.Error()))
+					return p
+				})
+				os.Exit(1)
+			}
+			isEndDateCheckFailed := endDate.After(time.Now().AddDate(0, 0, -1)) || endDate.Before(startDate)
+			if isEndDateCheckFailed {
+				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+					p := ho
+					p.Infof(i18n.T("End date must not be less than start date or greater than yesterday date"))
+					return p
+				})
+				os.Exit(1)
+			}
+
+		case api.DataService:
+
+		default:
+			e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+				p := ho
+				p.Infof(i18n.T("Unsupported source type"))
+				return p
+			})
+			os.Exit(1)
+		}
 	}
 
 	return nil
@@ -193,138 +253,164 @@ func (e *exportPullOptions) Validate() error {
 func (e *exportPullOptions) Run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	defer e.bundle.Close()
 
-	response := dataservicev1.ListFilesResponse{}
-	listOpts := dataservice.ListOptions{
-		IncludeDeleted: e.includeDeleted,
-		BeforeDate:     e.beforeDateT,
-		AfterDate:      e.afterDateT,
-	}
-
-	if e.currentMeteringExport.Files == nil {
-		e.currentMeteringExport.Files = make([]*dataservicev1.FileInfoCTLAction, 0)
-	}
-
-	p := output.NewHumanOutput()
-
-	if e.humanOutput {
-		p.WithDetails("cluster", e.currentMeteringExport.DataServiceCluster).
-			Titlef("%s", i18n.T("pull started"))
-		p = p.Sub()
-		p.WithDetails("exportFile", e.currentMeteringExport.FileName).Infof(i18n.T("files pulled status:"))
-	}
-
-	writer := printers.GetNewTabWriter(e.Out)
-
-	print, err := e.ToPrinter("pulled")
+	currentMeteringExport, err := e.rhmConfigFlags.MeteringExport()
 	if err != nil {
 		return err
 	}
 
-	print = output.NewActionCLITableOrStruct(e.PrintFlags, print)
+	bundleFile, err := bundle.NewBundleFromExport(currentMeteringExport)
+	if err != nil {
+		return err
+	}
 
-	files := []*dataservicev1.FileInfoCTLAction{}
-	errs := map[string]error{}
-	found := 0
-	pulled := 0
+	for name := range e.rhmRawConfig.Sources {
+		s := e.rhmRawConfig.Sources[name]
 
-	for {
-		err := e.dataService.ListFiles(ctx, listOpts, &response)
-
-		if err != nil {
-			return err
-		}
-
-		for i := range response.Files {
-			cliFile := dataservicev1.NewFileInfoCTLAction(response.Files[i])
-			files = append(files, cliFile)
-			found = found + 1
-
-			w, err := e.bundle.NewFile(cliFile.Name, int64(cliFile.Size))
+		if ((e.sourceType == EMPTY && e.sourceName == EMPTY) || (strings.EqualFold(e.sourceType, s.Type.String()) || strings.EqualFold(e.sourceName, s.Name))) && (strings.EqualFold(s.Type.String(), string(api.DataService))) {
+			err := e.DataServicePullBase(s, ctx, currentMeteringExport, bundleFile)
 			if err != nil {
-				return err
-			}
-
-			_, err = e.dataService.DownloadFile(ctx, cliFile.Id, w)
-			if err != nil {
-				cliFile.Action = dataservicev1.Pull
-				cliFile.Result = dataservicev1.Error
-				cliFile.Error = err.Error()
-				errs[cliFile.Name] = err
-
-				print.PrintObj(cliFile, writer)
-				writer.Flush()
 				continue
 			}
-
-			cliFile.Action = dataservicev1.Pull
-			cliFile.Result = dataservicev1.Ok
-			pulled = pulled + 1
-			print.PrintObj(cliFile, writer)
-			writer.Flush()
+		} else if ((e.sourceType == EMPTY && e.sourceName == EMPTY) || (strings.EqualFold(e.sourceType, s.Type.String()) || strings.EqualFold(e.sourceName, s.Name))) && (strings.EqualFold(s.Type.String(), string(api.ILMT))) {
+			_, _, err := e.IlmtPullBase(s, ctx, currentMeteringExport, bundleFile)
+			if err != nil {
+				continue
+			}
+			e.rhmRawConfig.ILMTEndpoints[s.Name].LastPulldate = strings.Split(time.Now().String(), " ")[0]
 		}
-
-		if response.NextPageToken == "" {
-			break
-		}
-
-		listOpts.PageSize = ptr.Int(int(response.PageSize))
-		listOpts.PageToken = response.NextPageToken
 	}
 
-	filesMap := map[string]*dataservicev1.FileInfoCTLAction{}
 	fileNames := map[string]interface{}{}
 
-	for _, f := range e.currentMeteringExport.Files {
-		if f.Committed && f.Pushed {
-			continue
-		}
-
-		filesMap[f.Name+f.Source+f.SourceType] = f
+	for _, f := range currentMeteringExport.Files {
 		fileNames[f.Name] = nil
 	}
 
-	for _, f := range files {
-		filesMap[f.Name+f.Source+f.SourceType] = f
-		fileNames[f.Name] = nil
-	}
-
-	e.currentMeteringExport.Files = []*dataservicev1.FileInfoCTLAction{}
-
-	for i := range filesMap {
-		e.currentMeteringExport.Files = append(e.currentMeteringExport.Files, filesMap[i])
-	}
-
-	err = e.bundle.Close()
+	err = bundleFile.Close()
 	if err != nil {
 		return err
 	}
 
-	err = e.bundle.Compact(fileNames)
+	err = bundleFile.Compact(fileNames)
 	if err != nil {
 		return err
 	}
 
-	if err := config.ModifyConfig(e.rhmConfigFlags.RawPersistentConfigLoader().ConfigAccess(), *e.rhmRawConfig, true); err != nil {
+	if err := config.ModifyConfig(e.rhmConfigFlags.ConfigAccess(), *e.rhmRawConfig, true); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx context.Context,
+	currentMeteringExport *api.MeteringExport,
+	bundleFile *bundle.BundleFile) error {
+
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+		p.WithDetails("exportFile", currentMeteringExport.FileName).Titlef(i18n.T("pulling sources to file"))
+		return p.Sub()
+	})
+
+	source, err := e.Factory.FromSource(*s)
+	if err != nil {
+		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+			p := ho
+			p.Errorf(err, i18n.T("failed to get source"))
+			return p
+		})
+
 		return err
 	}
 
-	if found == 0 {
-		return i18n.Errorf("no files found")
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+
+		p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
+		p.Infof(i18n.T("pull start"))
+		return p
+	})
+
+	count, err := source.Pull(ctx, currentMeteringExport, bundleFile, sources.EmptyOptions())
+
+	if err != nil {
+		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p.Errorf(err, i18n.T("pull failed"))
+			return p
+		})
+
+		return err
 	}
 
-	if e.humanOutput {
-		p.WithDetails("found", found, "pulled", pulled).Infof(i18n.T("pull complete"))
-
-		if len(errs) != 0 {
-			p.Errorf(nil, "errors have occurred")
-			p2 := p.Sub()
-			for name, err := range errs {
-				p2.WithDetails("name", name).Errorf(nil, err.Error())
-			}
-		}
-	}
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+		p.WithDetails("count", count).Infof(i18n.T("pull complete"))
+		return p
+	})
 
 	return nil
 }
+
+func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Context,
+	currentMeteringExport *api.MeteringExport,
+	bundleFile *bundle.BundleFile) (int, string, error) {
+	source, err := e.Factory.FromSource(*s)
+	if err != nil {
+		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
+			p := ho
+			p.Errorf(err, i18n.T("failed to get source"))
+			return p
+		})
+		return -1, EMPTY, err
+	}
+
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+		p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
+		p.Infof(i18n.T("pull start"))
+		return p
+	})
+
+	productCount, err := source.Pull(ctx, currentMeteringExport, bundleFile, sources.NewOptions(
+		StartDate, e.startDate,
+		EndDate, e.endDate,
+	))
+
+	productUsageResponseStr := source.GetResponse()
+
+	if err != nil {
+		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+			p.Errorf(err, i18n.T("pull failed"))
+			return p
+		})
+
+		return -1, EMPTY, err
+	}
+
+	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
+		p.WithDetails("count", productCount).Infof(i18n.T("pull complete"))
+		return p
+	})
+
+	return productCount, productUsageResponseStr, nil
+}
+
+func (e *exportPullOptions) promptStartDate() (string, error) {
+	promptStartDate := promptui.Prompt{
+		Label:  fmt.Sprintf(i18n.T("Enter start date in %s format"), "yyyy-mm-dd"),
+		Stdin:  io.NopCloser(e.In),
+		Stdout: NopWCloser(e.Out),
+	}
+	startDate, err := promptStartDate.Run()
+	if err != nil {
+		return EMPTY, err
+	}
+	return startDate, nil
+}
+
+func NopWCloser(w io.Writer) io.WriteCloser {
+	return nopWCloser{w}
+}
+
+type nopWCloser struct {
+	io.Writer
+}
+
+func (nopWCloser) Close() error { return nil }
