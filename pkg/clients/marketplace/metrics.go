@@ -95,6 +95,8 @@ func (r *marketplaceMetricClient) Status(ctx context.Context, id string) (*Marke
 	status := MarketplaceUsageResponse{}
 	jsonErr := json.Unmarshal(data, &status)
 
+	status.Details = &MarketplaceUsageResponseDetails{StatusCode: resp.StatusCode}
+
 	if err := checkError(resp, status, "failed to get status"); err != nil {
 		return nil, err
 	}
@@ -292,6 +294,9 @@ func (r *marketplaceMetricClient) Upload(ctx context.Context, fileName string, r
 			}
 			if resp.Status == MktplStatusFailed {
 				err = errors.NewWithDetails("upload processing failed", "message", resp.Message, "code", resp.ErrorCode)
+				return
+			}
+			if resp.Details.StatusCode == 200 {
 				return
 			}
 

@@ -19,6 +19,8 @@ import (
 	"io"
 	"os"
 
+	goflags "flag"
+
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
@@ -29,6 +31,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	cliflag "k8s.io/component-base/cli/flag"
+	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/completion"
@@ -110,6 +113,12 @@ func NewDatactlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	cmds.SetVersionTemplate(`{{with .Name}}{{printf "%s " .}}{{end}}{{printf "%s" .Version}}
 `)
+
+	// Add the flags for klog
+	cmds.SetGlobalNormalizationFunc(cliflag.WordSepNormalizeFunc)
+	fs := goflags.NewFlagSet("", goflags.PanicOnError)
+	klog.InitFlags(fs)
+	cmds.PersistentFlags().AddGoFlagSet(fs)
 
 	flags := cmds.PersistentFlags()
 
