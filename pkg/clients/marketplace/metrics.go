@@ -78,31 +78,31 @@ type marketplaceMetricClient struct {
 }
 
 func (r *marketplaceMetricClient) Status(ctx context.Context, id string) (*MarketplaceUsageResponse, error) {
+	status := MarketplaceUsageResponse{}
+	status.Details = &MarketplaceUsageResponseDetails{}
+
 	url := fmt.Sprintf(marketplaceMetricsStatus, r.client.URL, id)
 	resp, err := r.client.Get(url)
 	if err != nil {
-		return nil, err
+		return &status, err
 	}
+
+	status.Details.StatusCode = resp.StatusCode
 
 	defer resp.Body.Close()
-
 	data, err := ioutil.ReadAll(resp.Body)
-
 	if err != nil {
-		return nil, err
+		return &status, err
 	}
 
-	status := MarketplaceUsageResponse{}
 	jsonErr := json.Unmarshal(data, &status)
 
-	status.Details = &MarketplaceUsageResponseDetails{StatusCode: resp.StatusCode}
-
 	if err := checkError(resp, status, "failed to get status"); err != nil {
-		return nil, err
+		return &status, err
 	}
 
 	if jsonErr != nil {
-		return nil, err
+		return &status, err
 	}
 
 	return &status, nil
@@ -126,6 +126,13 @@ func checkError(resp *http.Response, status MarketplaceUsageResponse, message st
 		"status", status,
 		"headers", resp.Header,
 	)
+
+	/*
+		200 - Complete
+		202 - In Progress
+		4xx - Format Error
+		503 - System Outage
+	*/
 
 	if resp.StatusCode < 300 && resp.StatusCode >= 200 {
 		return nil
@@ -265,47 +272,6 @@ func (r *marketplaceMetricClient) Upload(ctx context.Context, fileName string, r
 			}
 
 			return
-		}
-
-		for {
-			var resp MarketplaceUsageResponse
-			err = retry.OnError(DefaultBackoff, isRetryable, func() error {
-				var localErr error
-				innerResp, localErr := r.Status(ctx, id)
-
-				if localErr != nil {
-					return localErr
-				}
-
-				if innerResp == nil {
-					return errors.New("no response provided")
-				}
-
-				resp = *innerResp
-				return nil
-			})
-
-			if err != nil {
-				logger.Info("failed to get status", "err", err)
-			}
-
-			if resp.Status == MktplStatusSuccess {
-				return
-			}
-			if resp.Status == MktplStatusFailed {
-				err = errors.NewWithDetails("upload processing failed", "message", resp.Message, "code", resp.ErrorCode)
-				return
-			}
-			if resp.Details.StatusCode == 200 {
-				return
-			}
-
-			select {
-			case <-ctx.Done():
-				err = errors.New("couldn't verify upload, context was cancelled")
-				return
-			case <-ticker.C:
-			}
 		}
 	}()
 
