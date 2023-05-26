@@ -39,7 +39,7 @@ func NewActionCLITableOrStruct(
 				Description: "id of the file",
 			},
 			{
-				Name:        "Name",
+				Name:        "Name                                                         ",
 				Description: "name of the file",
 				Type:        "string",
 			},
@@ -85,7 +85,7 @@ func NewPushFileOnlyCLITableOrStruct(
 		PrintFlags: flags,
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
-				Name:        "      Name",
+				Name:        "      Name                                                         ",
 				Description: "name of the file",
 			},
 			{
