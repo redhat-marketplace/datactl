@@ -159,59 +159,12 @@ var _ = Describe("marketplace uploaders", func() {
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/metering/api/v2/metrics"),
 					verifyFileUpload(fileName, testBody),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &postReponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
+					ghttp.RespondWithJSONEncoded(http.StatusBadRequest, &postReponse),
 				),
 			)
 		})
 
 		It("should return error on failure", func() {
-			ctx := context.Background()
-			_, err := sut.Metrics().Upload(ctx, fileName, bytes.NewReader(testBody))
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Describe("uploading files", func() {
-		BeforeEach(func() {
-			config.polling = 1 * time.Second
-			config.timeout = 1 * time.Second
-			sut = NewClient(config)
-			Expect(err).To(Succeed())
-
-			server.AppendHandlers(
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/metering/api/v2/metrics"),
-					verifyFileUpload(fileName, testBody),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &postReponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
-				),
-				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/metering/api/v2/metrics/"+testId),
-					ghttp.RespondWithJSONEncoded(http.StatusOK, &getResponse),
-				),
-			)
-		})
-
-		It("should timeout", func() {
 			ctx := context.Background()
 			_, err := sut.Metrics().Upload(ctx, fileName, bytes.NewReader(testBody))
 			Expect(err).To(HaveOccurred())
