@@ -194,6 +194,7 @@ func (c *exportCommitOptions) Run() error {
 		if err != nil {
 			errs = append(errs, err)
 		}
+		committed += count
 
 		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
 			p.WithDetails("count", count).Infof(i18n.T("commit complete"))
@@ -201,12 +202,7 @@ func (c *exportCommitOptions) Run() error {
 		})
 	}
 
-	err := c.bundle.Close()
-	if err != nil {
-		return err
-	}
-
-	err = c.bundle.Compact(nil)
+	err := c.bundle.Compact(nil)
 	if err != nil {
 		return err
 	}
