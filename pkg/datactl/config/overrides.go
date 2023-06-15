@@ -27,6 +27,10 @@ type ConfigOverrides struct {
 
 	CurrentContext string
 	Timeout        string
+
+	// TLS
+	MinVersion   string
+	CipherSuites []string
 }
 
 type ConfigOverrideFlags struct {
@@ -34,6 +38,10 @@ type ConfigOverrideFlags struct {
 
 	CurrentContext clientcmd.FlagInfo
 	Timeout        clientcmd.FlagInfo
+
+	// TLS
+	MinVersion   clientcmd.FlagInfo
+	CipherSuites clientcmd.FlagInfo
 }
 
 type MarketplaceOverrideFlags struct {

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
+	k8sapiflag "k8s.io/component-base/cli/flag"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/i18n"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -157,9 +158,26 @@ func (init *addDataServiceOptions) runKubeConnected() error {
 }
 
 func (init *addDataServiceOptions) discoverDataServiceCA() error {
+
+	logger.Info("TLS", "MinVersion", *init.rhmConfigFlags.MinVersion)
+	tlsVersion, err := k8sapiflag.TLSVersion(*init.rhmConfigFlags.MinVersion)
+	if err != nil {
+		logger.Error(err, "TLS version invalid")
+		return err
+	}
+
+	logger.Info("TLS", "CipherSuites", *init.rhmConfigFlags.CipherSuites)
+	tlsCipherSuites, err := k8sapiflag.TLSCipherSuites(*init.rhmConfigFlags.CipherSuites)
+	if err != nil {
+		logger.Error(err, "failed to convert TLS cipher suite name to ID")
+		return err
+	}
+
 	// DataService cert uses serving-certs-ca-bundle, so the CA should already be in the pool
 	// via the kube context. A user or test can still specify --insecure-skip-tls-verify
 	conf := &tls.Config{
+		MinVersion:         tlsVersion,
+		CipherSuites:       tlsCipherSuites,
 		InsecureSkipVerify: ptr.ToBool(init.rhmConfigFlags.KubectlConfig.Insecure),
 	}
 

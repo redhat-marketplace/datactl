@@ -131,9 +131,17 @@ func ProvideIlmtSource(
 		url = fmt.Sprintf("https://" + url)
 	}
 
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
 	return &ilmt.IlmtConfig{
 		Host:  url,
 		Token: token,
+		TlsConfig: &tls.Config{
+			RootCAs: rootCAs,
+		},
 	}, nil
 }
 
