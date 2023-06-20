@@ -41,6 +41,10 @@ type ConfigFlags struct {
 	marketplaceClient     marketplace.Client
 	marketplaceClientLock sync.Mutex
 
+	// TLS config
+	MinVersion   *string
+	CipherSuites *[]string
+
 	// export flags
 	ExportFileName *string
 
@@ -60,6 +64,7 @@ type ConfigFlags struct {
 }
 
 func NewConfigFlags(kubeFlags *genericclioptions.ConfigFlags) *ConfigFlags {
+	cipherSuites := &[]string{}
 	return &ConfigFlags{
 		overrides:         &ConfigOverrides{},
 		DATACTLConfig:     ptr.String(""),
@@ -67,6 +72,8 @@ func NewConfigFlags(kubeFlags *genericclioptions.ConfigFlags) *ConfigFlags {
 		MarketplaceToken:  ptr.String(""),
 		DataServiceCAFile: ptr.String(""),
 		ExportFileName:    ptr.String(""),
+		MinVersion:        ptr.String(""),
+		CipherSuites:      cipherSuites,
 		KubectlConfig:     kubeFlags,
 	}
 }
@@ -103,6 +110,14 @@ func (f *ConfigFlags) toRawConfigLoader() ClientConfig {
 
 	if f.MarketplaceToken != nil {
 		f.overrides.Marketplace.PullSecretData = *f.MarketplaceToken
+	}
+
+	if f.MinVersion != nil {
+		f.overrides.MinVersion = *f.MinVersion
+	}
+
+	if f.CipherSuites != nil {
+		f.overrides.CipherSuites = *f.CipherSuites
 	}
 
 	//TODO add more overrides
@@ -203,6 +218,16 @@ func (f *ConfigFlags) toPersistentMeteringExport() (*datactlapi.MeteringExport, 
 
 func (f *ConfigFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(f.DATACTLConfig, "rhm-config", "", "override the rhm config file")
+	flags.StringVar(f.MinVersion, "tls-min-version", "VersionTLS12", "Minimum TLS version supported. Value must match version names from https://golang.org/pkg/crypto/tls/#pkg-constants.")
+	flags.StringSliceVar(f.CipherSuites,
+		"tls-cipher-suites",
+		[]string{"TLS_AES_128_GCM_SHA256",
+			"TLS_AES_256_GCM_SHA384",
+			"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+			"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+			"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+			"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"},
+		"Comma-separated list of cipher suites for the server. Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants). If omitted, a subset will be used")
 	BindOverrideFlags(f.overrides, flags, RecommendedConfigOverrideFlags("rhm-"))
 	f.KubectlConfig.AddFlags(flags)
 }

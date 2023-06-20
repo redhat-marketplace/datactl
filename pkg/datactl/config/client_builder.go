@@ -30,6 +30,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	k8sapiflag "k8s.io/component-base/cli/flag"
 )
 
 type DeferredLoadingClientConfig struct {
@@ -177,6 +178,23 @@ func (config *DirectClientConfig) RawConfig() (*datactlapi.Config, error) {
 func (config *DirectClientConfig) MarketplaceClientConfig() (*marketplace.MarketplaceConfig, error) {
 	mktplConfig, err := clients.ProvideMarketplaceUpload(&config.config)
 
+	logger.Info("TLS", "MinVersion", config.overrides.MinVersion)
+	tlsVersion, err := k8sapiflag.TLSVersion(config.overrides.MinVersion)
+	if err != nil {
+		logger.Error(err, "TLS version invalid")
+		return nil, err
+	}
+
+	logger.Info("TLS", "CipherSuites", config.overrides.CipherSuites)
+	tlsCipherSuites, err := k8sapiflag.TLSCipherSuites(config.overrides.CipherSuites)
+	if err != nil {
+		logger.Error(err, "failed to convert TLS cipher suite name to ID")
+		return nil, err
+	}
+
+	mktplConfig.TlsConfig.MinVersion = tlsVersion
+	mktplConfig.TlsConfig.CipherSuites = tlsCipherSuites
+
 	if err != nil {
 		return nil, err
 	}
@@ -235,6 +253,23 @@ func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*d
 		return nil, err
 	}
 
+	logger.Info("TLS", "MinVersion", config.overrides.MinVersion)
+	tlsVersion, err := k8sapiflag.TLSVersion(config.overrides.MinVersion)
+	if err != nil {
+		logger.Error(err, "TLS version invalid")
+		return nil, err
+	}
+
+	logger.Info("TLS", "CipherSuites", config.overrides.CipherSuites)
+	tlsCipherSuites, err := k8sapiflag.TLSCipherSuites(config.overrides.CipherSuites)
+	if err != nil {
+		logger.Error(err, "failed to convert TLS cipher suite name to ID")
+		return nil, err
+	}
+
+	ds.TlsConfig.MinVersion = tlsVersion
+	ds.TlsConfig.CipherSuites = tlsCipherSuites
+
 	return ds, nil
 }
 
@@ -256,6 +291,23 @@ func (config *DirectClientConfig) IlmtClientConfig(source api.Source) (*ilmt.Ilm
 		logger.Info("failed to get ILMT source", "err", err)
 		return nil, err
 	}
+
+	logger.Info("TLS", "MinVersion", config.overrides.MinVersion)
+	tlsVersion, err := k8sapiflag.TLSVersion(config.overrides.MinVersion)
+	if err != nil {
+		logger.Error(err, "TLS version invalid")
+		return nil, err
+	}
+
+	logger.Info("TLS", "CipherSuites", config.overrides.CipherSuites)
+	tlsCipherSuites, err := k8sapiflag.TLSCipherSuites(config.overrides.CipherSuites)
+	if err != nil {
+		logger.Error(err, "failed to convert TLS cipher suite name to ID")
+		return nil, err
+	}
+
+	ilmt.TlsConfig.MinVersion = tlsVersion
+	ilmt.TlsConfig.CipherSuites = tlsCipherSuites
 
 	return ilmt, nil
 }

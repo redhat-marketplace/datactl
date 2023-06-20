@@ -17,6 +17,7 @@ package ilmt
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
@@ -31,6 +32,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/redhat-marketplace/datactl/pkg/clients/shared"
 	"k8s.io/klog/v2/klogr"
 )
 
@@ -47,6 +49,8 @@ type IlmtConfig struct {
 	Host  string `json:"host"`
 	Port  string `json:"port"`
 	Token string `json:"token"`
+
+	TlsConfig *tls.Config
 }
 
 type ilmtClient struct {
@@ -61,7 +65,9 @@ type Client interface {
 
 func NewClient(config *IlmtConfig) Client {
 	cli := &ilmtClient{
-		Client:     &http.Client{},
+		Client: shared.NewHttpClient(
+			config.TlsConfig,
+		),
 		IlmtConfig: *config,
 		req:        &reqBuilder{Host: config.Host},
 	}
