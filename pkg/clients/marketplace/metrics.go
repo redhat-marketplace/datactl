@@ -45,10 +45,11 @@ type MarketplaceUsageResponseDetails struct {
 }
 
 type MarketplaceUsageResponse struct {
-	RequestID string      `json:"requestId,omitempty"`
-	Status    MktplStatus `json:"status,omitempty"`
-	Message   string      `json:"message,omitempty"`
-	ErrorCode string      `json:"errorCode,omitempty"`
+	RequestID     string      `json:"requestId,omitempty"`
+	CorrelationID string      `json:"correlationId,omitempty"`
+	Status        MktplStatus `json:"status,omitempty"`
+	Message       string      `json:"message,omitempty"`
+	ErrorCode     string      `json:"errorCode,omitempty"`
 
 	Details *MarketplaceUsageResponseDetails `json:"details,omitempty"`
 }
@@ -97,7 +98,7 @@ func (r *marketplaceMetricClient) Status(ctx context.Context, id string) (*Marke
 
 	jsonErr := json.Unmarshal(data, &status)
 
-	if err := checkError(resp, status, "failed to get status"); err != nil {
+	if err := checkError(resp, string(data), status, "failed to get status"); err != nil {
 		return &status, err
 	}
 
@@ -119,12 +120,13 @@ func isRetryable(err error) bool {
 	return false
 }
 
-func checkError(resp *http.Response, status MarketplaceUsageResponse, message string) error {
+func checkError(resp *http.Response, body string, status MarketplaceUsageResponse, message string) error {
 	logger.Info("retrieved response",
 		"statusCode", resp.StatusCode,
 		"proto", resp.Proto,
 		"status", status,
 		"headers", resp.Header,
+		"body", body,
 	)
 
 	/*
@@ -209,7 +211,7 @@ func (r *marketplaceMetricClient) uploadFile(ctx context.Context, form []byte, f
 	status := MarketplaceUsageResponse{}
 	jsonErr := json.Unmarshal(body, &status)
 
-	if err := checkError(resp, status, "failed to upload"); err != nil {
+	if err := checkError(resp, string(body), status, "failed to upload"); err != nil {
 		return "", err
 	}
 
