@@ -11,6 +11,10 @@ GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update t
 GOBIN := $(shell pwd)/bin
 PATH := $(GOBIN):$(PATH)
 
+IMAGE_REGISTRY ?= localhost
+IMAGE_NAME ?= datactl
+IMAGE_TAG ?= latest
+
 export PATH
 export GOBIN
 
@@ -70,3 +74,9 @@ tools:
 	go mod download
 	go install "k8s.io/code-generator/cmd/conversion-gen@v0.24.12"	
 	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0"
+
+docker-build:
+	docker build -t $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) .
+
+docker-push:
+	docker push $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
