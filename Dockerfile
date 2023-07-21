@@ -15,6 +15,7 @@ RUN --mount=type=bind,source=.,readonly,target=/opt/app-root/src/go/src/github.c
     --mount=type=cache,id=go-build,uid=1001,gid=0,target=/opt/app-root/src/.cache/go-build \
     --mount=type=cache,id=mod,uid=1001,gid=0,target=/opt/app-root/src/go/pkg/mod \
     cd /opt/app-root/src/go/src/github.com/redhat-marketplace/datactl && \
+    go version && \
     go mod download && \
     GOFLAGS="-buildvcs=false" go install ./cmd/datactl && \
     go install github.com/acardace/fips-detect@latest
