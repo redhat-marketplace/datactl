@@ -37,7 +37,7 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 
 2. Log in to your cluster.
 
-3. Setup your configuration.
+3. Setup your configuration. When prompted, provide the [pull secret token](https://marketplace.redhat.com/) as the `Upload API Secret`.
 
    ```sh
    oc datactl config init
@@ -132,7 +132,7 @@ A containerized FIPS enabled version of datactl is provided, built with Red Hat'
    ```
    mkdir -p $HOME/.datactl
    ```
-2. Setup your configuration, binding the `.datactl` and `.kube` directories
+2. Setup your configuration, binding the `.datactl` and `.kube` directories, and providing the marketplace api endpoint and [pull secret token](https://marketplace.redhat.com/en-us/account/keys)
    ```
    docker run --rm \
    --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
