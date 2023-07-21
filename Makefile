@@ -55,16 +55,16 @@ generate: validate-go-version tools
 
 .PHONY: install
 install: goreleaser
-	goreleaser build --skip-validate --single-target --id datactl --rm-dist
+	goreleaser build --skip-validate --single-target --id datactl --clean
 	cp $(shell find dist -type f -name datactl | xargs) /usr/local/bin/
 
 .PHONY: test-release
 test-release: goreleaser
-	goreleaser release --skip-publish --skip-announce --skip-validate --rm-dist
+	goreleaser release --skip-publish --skip-announce --skip-validate --clean
 
 .PHONY: release
 release: goreleaser
-	goreleaser release --rm-dist
+	goreleaser release --clean
 
 .PHONY: goreleaser
 goreleaser:

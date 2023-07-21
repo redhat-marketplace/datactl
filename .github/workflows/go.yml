@@ -54,7 +54,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --snapshot --rm-dist
+          args: release --snapshot --clean
 
       - name: Archive build
         if: github.ref != 'refs/heads/main'
