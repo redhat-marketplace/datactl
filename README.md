@@ -160,7 +160,7 @@ A containerized FIPS enabled version of datactl is provided, built with Red Hat'
    --name datactl \
    --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
    --mount type=bind,source=$HOME/.kube,target=/root/.kube \
-   quay.io/rh-marketplace/datactl:latest export pull
+   quay.io/rh-marketplace/datactl:latest export push
    ```
 6. Commit
    ```
