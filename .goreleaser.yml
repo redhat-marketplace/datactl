@@ -1,6 +1,6 @@
 before:
   hooks:
-    - go mod tidy -go=1.17 && go mod tidy -go=1.19.10
+    - go mod tidy -go=1.17 && go mod tidy -go=1.19.11
     - find . -type f -name "*.go" | xargs addlicense -c "IBM Corporation."
 env:
   - CGO_ENABLED=0
@@ -44,12 +44,14 @@ builds:
       - ppc64le
 archives:
   - id: tar
-    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
-    replacements:
-      amd64: x86_64
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "darwin" }}Darwin
+      {{- else if eq .Arch "linux" }}Linux
+      {{- else if eq .Arch "windows" }}Windows
+      {{- else }}{{ .Arch }}{{ end }}
     builds:
       - datactl
       - datactl-arm64

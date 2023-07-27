@@ -11,6 +11,10 @@ GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update t
 GOBIN := $(shell pwd)/bin
 PATH := $(GOBIN):$(PATH)
 
+IMAGE_REGISTRY ?= localhost
+IMAGE_NAME ?= datactl
+IMAGE_TAG ?= latest
+
 export PATH
 export GOBIN
 
@@ -51,16 +55,16 @@ generate: validate-go-version tools
 
 .PHONY: install
 install: goreleaser
-	goreleaser build --skip-validate --single-target --id datactl --rm-dist
+	goreleaser build --skip-validate --single-target --id datactl --clean
 	cp $(shell find dist -type f -name datactl | xargs) /usr/local/bin/
 
 .PHONY: test-release
 test-release: goreleaser
-	goreleaser release --skip-publish --skip-announce --skip-validate --rm-dist
+	goreleaser release --skip-publish --skip-announce --skip-validate --clean
 
 .PHONY: release
 release: goreleaser
-	goreleaser release --rm-dist
+	goreleaser release --clean
 
 .PHONY: goreleaser
 goreleaser:
@@ -70,3 +74,9 @@ tools:
 	go mod download
 	go install "k8s.io/code-generator/cmd/conversion-gen@v0.24.12"	
 	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0"
+
+docker-build:
+	docker build -t $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) .
+
+docker-push:
+	docker push $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
