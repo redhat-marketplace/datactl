@@ -75,6 +75,15 @@ tools:
 	go install "k8s.io/code-generator/cmd/conversion-gen@v0.24.12"	
 	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0"
 
+go-licenses:
+	go install "github.com/google/go-licenses@latest"
+
+licenses-check: go-licenses
+	go-licenses check --include_tests ./...
+
+licenses-save: go-licenses
+	go-licenses save --include_tests ./... --save_path=licenses
+
 docker-build:
 	docker build -t $(IMAGE_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG) .
 
