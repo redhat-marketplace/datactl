@@ -10,6 +10,7 @@
 - [Getting started](#getting-started)
 - [Exporting from DataService sources](#exporting-from-dataservice-sources)
 - [Exporting from IBM License Metric Tool sources](#exporting-from-ibm-license-metric-tool-sources)
+- [Using the FIPS enabled datactl container](#using-the-fips-enabled-datactl-container)
 
 <!-- markdown-toc end -->
 
@@ -36,7 +37,7 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 
 2. Log in to your cluster.
 
-3. Setup your configuration.
+3. Setup your configuration. When prompted, provide the [pull secret token](https://marketplace.redhat.com/) as the `Upload API Secret`.
 
    ```sh
    oc datactl config init
@@ -122,3 +123,50 @@ To push data to Red Hat Marketplace execute command
 
 `datactl export push`
 
+## Using the FIPS enabled datactl container
+
+A containerized FIPS enabled version of datactl is provided, built with Red Hat's [go-toolset](https://developers.redhat.com/articles/2022/05/31/your-go-application-fips-compliant)
+
+
+1. Create the `.datactl` directory locally on the host
+   ```
+   mkdir -p $HOME/.datactl
+   ```
+2. Setup your configuration, binding the `.datactl` and `.kube` directories, and providing the marketplace api endpoint and [pull secret token](https://marketplace.redhat.com/en-us/account/keys)
+   ```
+   docker run --rm \
+   --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
+   --mount type=bind,source=$HOME/.kube,target=/root/.kube \
+   quay.io/rh-marketplace/datactl:latest config init --api marketplace.redhat.com --token ${TOKEN}
+   ```
+3. Add a data source, such as `dataservice` from your current OpenShift cluster context
+   ```
+   docker run --rm \
+   --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
+   --mount type=bind,source=$HOME/.kube,target=/root/.kube \
+   quay.io/rh-marketplace/datactl:latest sources add dataservice --insecure-skip-tls-verify=true --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
+   ```
+4. Pull from the data source
+   ```
+   docker run --rm \
+   --name datactl \
+   --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
+   --mount type=bind,source=$HOME/.kube,target=/root/.kube \
+   quay.io/rh-marketplace/datactl:latest export pull
+   ```
+5. Push data to Red Hat Marketplace
+   ```
+   docker run --rm \
+   --name datactl \
+   --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
+   --mount type=bind,source=$HOME/.kube,target=/root/.kube \
+   quay.io/rh-marketplace/datactl:latest export push
+   ```
+6. Commit
+   ```
+   docker run --rm \
+   --name datactl \
+   --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
+   --mount type=bind,source=$HOME/.kube,target=/root/.kube \
+   quay.io/rh-marketplace/datactl:latest export commit
+  ```
