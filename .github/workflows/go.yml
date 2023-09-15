@@ -10,12 +10,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19.12
 
@@ -52,7 +52,7 @@ jobs:
         run: ginkgo -r --randomize-suites --randomize-all --fail-on-pending --cover --trace --race --show-node-events
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v4
         if: github.ref != 'refs/heads/main'
         with:
           distribution: goreleaser
@@ -61,7 +61,7 @@ jobs:
 
       - name: Archive build
         if: github.ref != 'refs/heads/main'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/**/*.tar.gz
