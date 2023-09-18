@@ -72,8 +72,8 @@ goreleaser:
 
 tools:
 	go mod download
-	go install "k8s.io/code-generator/cmd/conversion-gen@v0.24.12"	
-	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.10.0"
+	go install "k8s.io/code-generator/cmd/conversion-gen@v0.26.9"	
+	go install "sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.4"
 
 go-licenses:
 	go install "github.com/google/go-licenses@latest"
