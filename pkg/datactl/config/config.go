@@ -298,7 +298,9 @@ func writeConfig(
 			return err
 		}
 		writeFile, err := mutate(currConfig)
-
+		if err != nil {
+			return err
+		}
 		if !writeFile {
 			return nil
 		}

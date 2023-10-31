@@ -61,6 +61,9 @@ func (f *BundleFile) open(fileName string) error {
 	}
 
 	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
 
 	// if the tar file has been written to previously, we need to remove the last
 	// 1024 bytes to append new files

@@ -177,6 +177,9 @@ func (config *DirectClientConfig) RawConfig() (*datactlapi.Config, error) {
 
 func (config *DirectClientConfig) MarketplaceClientConfig() (*marketplace.MarketplaceConfig, error) {
 	mktplConfig, err := clients.ProvideMarketplaceUpload(&config.config)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Info("TLS", "MinVersion", config.overrides.MinVersion)
 	tlsVersion, err := k8sapiflag.TLSVersion(config.overrides.MinVersion)
