@@ -192,6 +192,9 @@ func (r *marketplaceMetricClient) makeFormFile(fileName string, file []byte) (fo
 func (r *marketplaceMetricClient) uploadFile(ctx context.Context, form []byte, formContent string) (id string, err error) {
 	var req *http.Request
 	req, err = http.NewRequestWithContext(ctx, "POST", fmt.Sprintf(marketplaceMetricsPath, r.client.URL), bytes.NewReader(form))
+	if err != nil {
+		return "", err
+	}
 	req.Header.Set("Content-Type", formContent)
 
 	// Perform the request

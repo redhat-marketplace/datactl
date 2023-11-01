@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -89,19 +88,16 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 		urlForStandaloneProductUsage, err := ilmtC.req.FetchUsageData(ctx, ilmtC.IlmtConfig.Host, ilmtC.IlmtConfig.Token, CRITERIA_STANDALONE, strings.Split(selectedDate.String(), BLANK_VALUE)[0], strings.Split(selectedDate.String(), BLANK_VALUE)[0])
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		urlForProductPartOfBndlUsage, err := ilmtC.req.FetchUsageData(ctx, ilmtC.IlmtConfig.Host, ilmtC.IlmtConfig.Token, CRITEIRA_PRODUCTPARTOFBNDL, strings.Split(selectedDate.String(), BLANK_VALUE)[0], strings.Split(selectedDate.String(), BLANK_VALUE)[0])
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		urlForParentProductUsage, err := ilmtC.req.FetchUsageData(ctx, ilmtC.IlmtConfig.Host, ilmtC.IlmtConfig.Token, CRITERIA_PARENTPRODUCT, strings.Split(selectedDate.String(), BLANK_VALUE)[0], strings.Split(selectedDate.String(), BLANK_VALUE)[0])
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		// licence usage for product
@@ -109,13 +105,11 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		standaloneProductRespData, err := ioutil.ReadAll(standaloneProductResp.Body)
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		var standaloneProductRespObj StandaloneProductResp
@@ -125,13 +119,11 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 		productPartOfBndlResp, err := ilmtC.Do(urlForProductPartOfBndlUsage)
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		productPartOfBndlRespData, err := ioutil.ReadAll(productPartOfBndlResp.Body)
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		var productPartOfBndlRespObj ProductPartOfBndlResp
@@ -141,13 +133,11 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 		parentProductResp, err := ilmtC.Do(urlForParentProductUsage)
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		parentProductRespData, err := ioutil.ReadAll(parentProductResp.Body)
 		if err != nil {
 			log.Fatal(err.Error())
-			return -1, EMPTY, err
 		}
 
 		var parentProductRespObj ParentProductResp
@@ -206,7 +196,6 @@ func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange
 			parentProductId, parentProductName, metricId, err := GetParentProduct(prodPartOfBundle, parentProductRespObj)
 			if err != nil {
 				log.Fatal(err.Error())
-				os.Exit(1)
 			}
 			host := ilmtC.IlmtConfig.Host[8:38]
 			BELL := '\a'
