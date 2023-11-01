@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"dario.cat/mergo"
 	"emperror.dev/errors"
-	"github.com/imdario/mergo"
 	clientcmdapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	datactlapi "github.com/redhat-marketplace/datactl/pkg/datactl/api"
 	"github.com/redhat-marketplace/datactl/pkg/datactl/api/latest"
