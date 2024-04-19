@@ -135,7 +135,12 @@ func (d *dataServiceClient) ListFiles(ctx context.Context, opts ListOptions, fil
 
 	req.URL.RawQuery = q.Encode()
 
-	klog.V(5).Infof("url: %v, rawQuery: %v", req.URL.String(), req.URL.RawQuery)
+	escURL := strings.ReplaceAll(req.URL.String(), "\n", "")
+	escURL = strings.ReplaceAll(escURL, "\r", "")
+	escRQ := strings.ReplaceAll(req.URL.RawQuery, "\n", "")
+	escRQ = strings.ReplaceAll(escRQ, "\r", "")
+
+	klog.V(5).Infof("url: %v, rawQuery: %v", escURL, escRQ)
 
 	resp, err := d.Do(req)
 	if err != nil {
