@@ -40,7 +40,7 @@ var (
 		{{ .cmd }} config init
 
 		# Initialize the config and preset upload URL and secret. Will not prompt.
-		{{ .cmd }} config init --api marketplace.redhat.com --token MY_TOKEN
+		{{ .cmd }} config init --api swc.saas.ibm.com --token MY_TOKEN
 `))
 )
 
@@ -110,7 +110,7 @@ func (init *configInitOptions) runAPIEndpointPrompt() error {
 	prompt := promptui.Prompt{
 		Label:    "Upload API Endpoint",
 		Validate: validate,
-		Default:  "marketplace.redhat.com",
+		Default:  "swc.saas.ibm.com",
 		Stdin:    io.NopCloser(init.In),
 		Stdout:   NopWCloser(init.Out),
 	}

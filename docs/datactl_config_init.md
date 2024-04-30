@@ -17,7 +17,7 @@ datactl config init
   datactl config init
   
   # Initialize the config and preset upload URL and secret. Will not prompt.
-  datactl config init --api marketplace.redhat.com --token MY_TOKEN
+  datactl config init --api swc.saas.ibm.com --token MY_TOKEN
 ```
 
 ### Options
