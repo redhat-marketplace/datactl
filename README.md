@@ -33,11 +33,11 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 
 ## Getting started
 
-1. Get your Red Hat Marketplace Pull Secret.
+1. Get your Pull Secret.
 
 2. Log in to your cluster.
 
-3. Setup your configuration. When prompted, provide the [pull secret token](https://marketplace.redhat.com/) as the `Upload API Secret`.
+3. Setup your configuration. When prompted, provide the [pull secret token](https://swc.saas.ibm.com/en-us/account/keys) as the `Upload API Secret`.
 
    ```sh
    oc datactl config init
@@ -92,13 +92,13 @@ Let's break down what each one is doing.
 
 `oc datactl export push`
 
-- Files pulled by the previous command are pushed to Red Hat Marketplace.
+- Files pulled by the previous command are pushed to IBM Software Central.
 - If this process errors, do not commit. Retry the export push or open a support ticket.
 
 `oc datactl export commit`
 
 - Commits the files to the dataservice.
-- At this point you're telling the data service that you've retrieved these files and have or will submit them to Red Hat Marketplace.
+- At this point you're telling the data service that you've retrieved these files and have or will submit them to IBM Software Central.
 - After some time, the files in dataservice will be cleaned up to save space.
 
 If you want to transfer it somewhere else, you can find the tar file under your `~/.datactl/data/` directory.
@@ -119,7 +119,7 @@ To pull data from ILMT, execute command
 
 First time you will be asked to provide start date. Next time last synchronization date is stored in config file and will be updated to pull data from last synchronization date.
 
-To push data to Red Hat Marketplace execute command
+To push data to IBM Software Central execute command
 
 `datactl export push`
 
@@ -132,12 +132,12 @@ A containerized FIPS enabled version of datactl is provided, built with Red Hat'
    ```
    mkdir -p $HOME/.datactl
    ```
-2. Setup your configuration, binding the `.datactl` and `.kube` directories, and providing the marketplace api endpoint and [pull secret token](https://marketplace.redhat.com/en-us/account/keys)
+2. Setup your configuration, binding the `.datactl` and `.kube` directories, and providing the api endpoint and [pull secret token](https://swc.saas.ibm.com/en-us/account/keys)
    ```
    docker run --rm \
    --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
    --mount type=bind,source=$HOME/.kube,target=/root/.kube \
-   quay.io/rh-marketplace/datactl:latest config init --api marketplace.redhat.com --token ${TOKEN}
+   quay.io/rh-marketplace/datactl:latest config init --api swc.saas.ibm.com --token ${TOKEN}
    ```
 3. Add a data source, such as `dataservice` from your current OpenShift cluster context
    ```
@@ -154,7 +154,7 @@ A containerized FIPS enabled version of datactl is provided, built with Red Hat'
    --mount type=bind,source=$HOME/.kube,target=/root/.kube \
    quay.io/rh-marketplace/datactl:latest export pull
    ```
-5. Push data to Red Hat Marketplace
+5. Push data to IBM Software Central
    ```
    docker run --rm \
    --name datactl \

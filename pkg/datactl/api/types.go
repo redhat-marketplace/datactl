@@ -90,7 +90,7 @@ type UploadAPI struct {
 	// +k8s:conversion-gen=false
 	LocationOfOrigin string
 
-	// Host is the url of the marketplace i.e. marketplace.redhat.com
+	// Host is the url of the marketplace i.e. swc.saas.ibm.com
 	Host string `json:"host"`
 
 	// +optional
@@ -179,7 +179,7 @@ func NewConfig() *Config {
 }
 
 const (
-	marketplaceProductionUrl = "https://marketplace.redhat.come"
+	marketplaceProductionUrl = "https://swc.saas.ibm.com"
 )
 
 func NewDefaultConfig(kube *genericclioptions.ConfigFlags) (*Config, error) {

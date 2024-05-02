@@ -58,7 +58,7 @@ func (s *Source) String() string {
 }
 
 type UploadAPI struct {
-	// Host is the url of the marketplace i.e. marketplace.redhat.com
+	// Host is the url of the marketplace i.e. swc.saas.ibm.com
 	Host string `json:"host"`
 
 	// +optional
