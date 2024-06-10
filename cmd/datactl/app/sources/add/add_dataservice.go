@@ -35,10 +35,10 @@ var (
 
 	configInitExample = templates.Examples(i18n.T(`
 		# Initialize the source, using the default context.
-		{{ .cmd }} sources add dataservice --use-default-context --namespace=redhat-marketplace
+		{{ .cmd }} sources add dataservice --use-default-context --namespace=ibm-software-central
 
 		# Initialize the source, using the default context and insecure self signed cert.
-		{{ .cmd }} sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace
+		{{ .cmd }} sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=ibm-software-central
 
 		# Initialize the config, prompting for a context to select.
 		{{ .cmd }} sources add dataservice

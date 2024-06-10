@@ -14,10 +14,10 @@ datactl sources add dataservice
 
 ```
   # Initialize the source, using the default context.
-  datactl sources add dataservice --use-default-context --namespace=redhat-marketplace
+  datactl sources add dataservice --use-default-context --namespace=ibm-software-central
   
   # Initialize the source, using the default context and insecure self signed cert.
-  datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace
+  datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=ibm-software-central
   
   # Initialize the config, prompting for a context to select.
   datactl sources add dataservice
