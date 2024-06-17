@@ -48,11 +48,11 @@ Datactl tool can be used standalone. Just move oc-datactl to your path and use `
 4. Add the role-binding to the default service account on operator-namespace.
 
    Install the ClusterRole and create the ClusterRoleBinding for the default service account for the namespace the IBM Metrics Operator's 
-   DataService is installed to `by default: redhat-marketplace`. The datactl tool will use this service account by default.
+   DataService is installed to `by default: ibm-software-central`. The datactl tool will use this service account by default.
 
    ```sh
    oc apply -f resources/service-account-role.yaml // file found in release
-   oc create clusterrolebinding rhm-files --clusterrole=rhm-files --serviceaccount=redhat-marketplace:default
+   oc create clusterrolebinding rhm-files --clusterrole=rhm-files --serviceaccount=ibm-software-central:default
    ```
 
 5. Now you're configured. You can start using the export commands.
@@ -65,7 +65,7 @@ Recommended approach is to run the commands in this order:
 // Must be logged in to the cluster
 
 // Add the dataservice as a source, to which you are logged into with your current context
-datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace
+datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=ibm-software-central
 
 // Pull the data from dataservice sources
 oc datactl export pull --source-type=dataservice
@@ -79,11 +79,11 @@ oc datactl export commit
 
 Let's break down what each one is doing.
 
-`oc datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=redhat-marketplace`
+`oc datactl sources add dataservice --use-default-context --insecure-skip-tls-verify=true --allow-self-signed=true --namespace=ibm-software-central`
 
 - Adds the default-context cluster's dataservice as a source for pulling
 - Writes the source data-service-endpoint to `~/.datactl/config`
-- The DataService to connect to is in the `redhat-marketplace` namespace
+- The DataService to connect to is in the `ibm-software-central` namespace
 
 `oc datactl export pull`
 
@@ -144,7 +144,7 @@ A containerized FIPS enabled version of datactl is provided, built with Red Hat'
    docker run --rm \
    --mount type=bind,source=$HOME/.datactl,target=/root/.datactl \
    --mount type=bind,source=$HOME/.kube,target=/root/.kube \
-   quay.io/rh-marketplace/datactl:latest sources add dataservice --insecure-skip-tls-verify=true --use-default-context --allow-self-signed=true --namespace=redhat-marketplace
+   quay.io/rh-marketplace/datactl:latest sources add dataservice --insecure-skip-tls-verify=true --use-default-context --allow-self-signed=true --namespace=ibm-software-central
    ```
 4. Pull from the data source
    ```

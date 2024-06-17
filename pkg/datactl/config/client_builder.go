@@ -233,7 +233,7 @@ func (config *DirectClientConfig) DataServiceClientConfig(source api.Source) (*d
 		}
 
 		if dsConfig.Namespace == "" {
-			dsConfig.Namespace = "redhat-marketplace"
+			dsConfig.Namespace = "ibm-software-central"
 		}
 
 		sa := serviceaccount.NewServiceAccountClient(dsConfig.Namespace, client)
