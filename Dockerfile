@@ -1,8 +1,9 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:1.21 AS build
+FROM registry.access.redhat.com/ubi9/go-toolset:1.21 AS build
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
+ARG FIPS_DETECT_VERSION=7157dae
 
 # Binary and pkg destination
 RUN mkdir -p /opt/app-root/src/go/bin && \
@@ -18,10 +19,10 @@ RUN --mount=type=bind,source=.,readonly,target=/opt/app-root/src/go/src/github.c
     go version && \
     go mod download && \
     GOFLAGS="-buildvcs=false" go install ./cmd/datactl && \
-    go install github.com/acardace/fips-detect@latest
+    go install github.com/acardace/fips-detect@${FIPS_DETECT_VERSION}
 
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
