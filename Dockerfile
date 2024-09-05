@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:1.21 AS build
+FROM registry.access.redhat.com/ubi9/go-toolset:1.21 AS build
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
@@ -17,18 +17,16 @@ RUN --mount=type=bind,source=.,readonly,target=/opt/app-root/src/go/src/github.c
     cd /opt/app-root/src/go/src/github.com/redhat-marketplace/datactl && \
     go version && \
     go mod download && \
-    GOFLAGS="-buildvcs=false" go install ./cmd/datactl && \
-    go install github.com/acardace/fips-detect@latest
+    GOFLAGS="-buildvcs=false" go install ./cmd/datactl
 
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
 COPY --from=build /opt/app-root/src/go/bin/datactl /usr/local/bin/datactl
-COPY --from=build /opt/app-root/src/go/bin/fips-detect /usr/local/bin/fips-detect
 COPY entrypoint.sh .
 
 ENV OPENSSL_FORCE_FIPS_MODE=1
