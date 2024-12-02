@@ -61,7 +61,8 @@ var _ = Describe("marketplace uploaders", func() {
 			polling: 1 * time.Second,
 			timeout: 4 * time.Second,
 		}
-		sut = NewClient(config)
+		sut, err = NewClient(config)
+		Expect(err).ShouldNot(HaveOccurred())
 
 		postReponse = MarketplaceUsageResponse{RequestID: testId}
 		retryPostResponse = MarketplaceUsageResponse{
@@ -173,8 +174,8 @@ var _ = Describe("marketplace uploaders", func() {
 
 	Describe("handling conflict", func() {
 		BeforeEach(func() {
-			sut = NewClient(config)
-			Expect(err).To(Succeed())
+			sut, err = NewClient(config)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -195,8 +196,8 @@ var _ = Describe("marketplace uploaders", func() {
 
 	Describe("handling error", func() {
 		BeforeEach(func() {
-			sut = NewClient(config)
-			Expect(err).To(Succeed())
+			sut, err = NewClient(config)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			for i := 0; i < 4; i++ {
 				server.AppendHandlers(

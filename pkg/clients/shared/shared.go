@@ -35,17 +35,21 @@ type RoundTripperOptions func(http.RoundTripper) http.RoundTripper
 func NewHttpClient(
 	tlsConfig *tls.Config,
 	opts ...RoundTripperOptions,
-) *http.Client {
+) (*http.Client, error) {
 	client := &http.Client{}
 
-	var roundtripper http.RoundTripper = spdy.NewRoundTripper(tlsConfig)
+	var roundtripper http.RoundTripper
+	roundtripper, err := spdy.NewRoundTripper(tlsConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, apply := range opts {
 		roundtripper = apply(roundtripper)
 	}
 
 	client.Transport = roundtripper
-	return client
+	return client, nil
 }
 
 type withHeader struct {

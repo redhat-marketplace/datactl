@@ -62,15 +62,19 @@ type Client interface {
 	FetchUsageData(ctx context.Context, dateRange DateRange) (int, string, error)
 }
 
-func NewClient(config *IlmtConfig) Client {
+func NewClient(config *IlmtConfig) (Client, error) {
+	client, err := shared.NewHttpClient(
+		config.TlsConfig,
+	)
+	if err != nil {
+		return nil, err
+	}
 	cli := &ilmtClient{
-		Client: shared.NewHttpClient(
-			config.TlsConfig,
-		),
+		Client:     client,
 		IlmtConfig: *config,
 		req:        &reqBuilder{Host: config.Host},
 	}
-	return cli
+	return cli, nil
 }
 
 func (ilmtC *ilmtClient) FetchUsageData(ctx context.Context, dateRange DateRange) (int, string, error) {
