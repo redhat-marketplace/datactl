@@ -46,7 +46,7 @@ type Client interface {
 	Metrics() MarketplaceMetrics
 }
 
-func NewClient(config *MarketplaceConfig) Client {
+func NewClient(config *MarketplaceConfig) (Client, error) {
 	if config.polling == 0 {
 		config.polling = 5 * time.Second
 	}
@@ -54,14 +54,19 @@ func NewClient(config *MarketplaceConfig) Client {
 		config.timeout = 60 * time.Second
 	}
 
+	client, err := shared.NewHttpClient(
+		config.TlsConfig,
+		shared.WithBearerAuth(config.Token),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	cli := &marketplaceClient{
-		Client: shared.NewHttpClient(
-			config.TlsConfig,
-			shared.WithBearerAuth(config.Token),
-		),
+		Client:            client,
 		MarketplaceConfig: config,
 	}
 
 	cli.metricClient = &marketplaceMetricClient{client: cli}
-	return cli
+	return cli, nil
 }

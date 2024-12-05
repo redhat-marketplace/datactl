@@ -148,7 +148,11 @@ func (f *ConfigFlags) toPersistentDataServiceClient(source api.Source) (dataserv
 		return nil, err
 	}
 
-	f.dataServiceClient[source.Name] = dataservice.NewClient(config)
+	f.dataServiceClient[source.Name], err = dataservice.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return f.dataServiceClient[source.Name], nil
 }
 
@@ -174,7 +178,11 @@ func (f *ConfigFlags) toPersistentIlmtClient(source api.Source) (ilmt.Client, er
 		return nil, err
 	}
 
-	f.ilmtClient[source.Name] = ilmt.NewClient(config)
+	f.ilmtClient[source.Name], err = ilmt.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return f.ilmtClient[source.Name], nil
 }
 
@@ -195,7 +203,11 @@ func (f *ConfigFlags) toPersistentMarketplaceClient() (marketplace.Client, error
 		return nil, err
 	}
 
-	f.marketplaceClient = marketplace.NewClient(config)
+	f.marketplaceClient, err = marketplace.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return f.marketplaceClient, nil
 }
 

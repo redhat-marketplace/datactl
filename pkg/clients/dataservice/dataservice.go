@@ -62,16 +62,20 @@ type Client interface {
 	DeleteFile(context.Context, string) error
 }
 
-func NewClient(config *DataServiceConfig) Client {
+func NewClient(config *DataServiceConfig) (Client, error) {
+	client, err := shared.NewHttpClient(
+		config.TlsConfig,
+		shared.WithBearerAuth(config.Token),
+	)
+	if err != nil {
+		return nil, err
+	}
 	cli := &dataServiceClient{
-		Client: shared.NewHttpClient(
-			config.TlsConfig,
-			shared.WithBearerAuth(config.Token),
-		),
+		Client:            client,
 		DataServiceConfig: *config,
 		req:               &reqBuilder{URL: config.URL},
 	}
-	return cli
+	return cli, nil
 }
 
 const (
