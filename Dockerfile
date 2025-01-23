@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.22.7 AS build
+FROM registry.access.redhat.com/ubi9/go-toolset:1.22.9 AS build
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
