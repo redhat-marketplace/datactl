@@ -1,10 +1,4 @@
 GO=go
-GO_MAJOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f1)
-GO_MINOR_VERSION = $(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
-MINIMUM_SUPPORTED_GO_MAJOR_VERSION = 1
-MINIMUM_SUPPORTED_GO_MINOR_VERSION = 20
-MAXIMUM_SUPPORTED_GO_MINOR_VERSION = 20
-GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
 
 .DEFAULT_GOAL := install
 
@@ -17,20 +11,6 @@ IMAGE_TAG ?= latest
 
 export PATH
 export GOBIN
-
-validate-go-version: ## Validates the installed version of go against Mattermost's minimum requirement.
-	@if [ $(GO_MAJOR_VERSION) -gt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
-		exit 0 ;\
-	elif [ $(GO_MAJOR_VERSION) -lt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
-		echo '$(GO_VERSION_VALIDATION_ERR_MSG)';\
-		exit 1; \
-	elif [ $(GO_MINOR_VERSION) -lt $(MINIMUM_SUPPORTED_GO_MINOR_VERSION) ] ; then \
-		echo '$(GO_VERSION_VALIDATION_ERR_MSG)';\
-		exit 1; \
-	elif [ $(GO_MINOR_VERSION) -gt $(MAXIMUM_SUPPORTED_GO_MINOR_VERSION) ] ; then \
-		echo '$(GO_VERSION_VALIDATION_ERR_MSG)';\
-		exit 1; \
-	fi
 
 .PHONY: tag
 tag:
@@ -50,7 +30,7 @@ test:
 	ginkgo -r --randomize-all --randomize-suites --fail-on-pending --cover --trace --race --show-node-events
 
 .PHONY: generate
-generate: validate-go-version tools
+generate: tools
 	go generate ./...
 
 .PHONY: install
