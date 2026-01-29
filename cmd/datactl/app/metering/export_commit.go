@@ -159,11 +159,11 @@ func (c *exportCommitOptions) Run() error {
 		p.Titlef("%s", i18n.T("commit started"))
 
 		if c.dryRun {
-			p.Warnf(i18n.T("dry-run enabled; files will not be committed"))
+			p.Warnf("%s", i18n.T("dry-run enabled; files will not be committed"))
 		}
 
 		p = p.Sub()
-		p.WithDetails("exportFile", c.currentMeteringExport.FileName).Infof(i18n.T("file commit status:"))
+		p.WithDetails("exportFile", c.currentMeteringExport.FileName).Infof("%s", i18n.T("file commit status:"))
 		return p
 	})
 
@@ -197,7 +197,7 @@ func (c *exportCommitOptions) Run() error {
 		committed += count
 
 		c.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-			p.WithDetails("count", count).Infof(i18n.T("commit complete"))
+			p.WithDetails("count", count).Infof("%s", i18n.T("commit complete"))
 			return p
 		})
 	}
@@ -209,7 +209,7 @@ func (c *exportCommitOptions) Run() error {
 
 	c.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 		p := ho
-		p.WithDetails("committed", committed, "files", len(c.currentMeteringExport.Files)).Infof(i18n.T("commit finished"))
+		p.WithDetails("committed", committed, "files", len(c.currentMeteringExport.Files)).Infof("%s", i18n.T("commit finished"))
 
 		if len(errs) != 0 {
 			p.Errorf(nil, "errors have occurred")

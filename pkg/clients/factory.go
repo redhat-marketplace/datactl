@@ -105,7 +105,7 @@ func ProvideDataService(
 	url := dsConfig.Host
 
 	if !strings.HasPrefix(url, "https://") {
-		url = fmt.Sprintf("https://" + url)
+		url = fmt.Sprintf("%s", "https://"+url)
 	}
 
 	return &dataservice.DataServiceConfig{
@@ -128,7 +128,7 @@ func ProvideIlmtSource(
 	url := ilmtConfig.Host
 
 	if !strings.HasPrefix(url, "https://") {
-		url = fmt.Sprintf("https://" + url)
+		url = fmt.Sprintf("%s", "https://"+url)
 	}
 
 	rootCAs, _ := x509.SystemCertPool()
@@ -179,7 +179,7 @@ func ProvideMarketplaceUpload(
 	url := rhmRawConfig.MarketplaceEndpoint.Host
 
 	if !strings.HasPrefix(url, "https://") {
-		url = fmt.Sprintf("https://" + url)
+		url = fmt.Sprintf("%s", "https://"+url)
 	}
 
 	return &marketplace.MarketplaceConfig{

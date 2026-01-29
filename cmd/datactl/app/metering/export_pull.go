@@ -152,7 +152,7 @@ func (e *exportPullOptions) Validate() error {
 					if err != nil {
 						e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 							p := ho
-							p.Errorf(err, i18n.T(err.Error()))
+							p.Errorf(err, "%s", i18n.T(err.Error()))
 							return p
 						})
 						os.Exit(1)
@@ -160,7 +160,7 @@ func (e *exportPullOptions) Validate() error {
 					if startDate == EMPTY {
 						e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 							p := ho
-							p.Infof(i18n.T("Startdate mandatory to provide in case of pulling data from source first time"))
+							p.Infof("%s", i18n.T("Startdate mandatory to provide in case of pulling data from source first time"))
 							return p
 						})
 						os.Exit(1)
@@ -176,7 +176,7 @@ func (e *exportPullOptions) Validate() error {
 			if !startDateMatched {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Infof(i18n.T("Startdate must be in format yyyy-mm-dd"))
+					p.Infof("%s", i18n.T("Startdate must be in format yyyy-mm-dd"))
 					return p
 				})
 				os.Exit(1)
@@ -186,7 +186,7 @@ func (e *exportPullOptions) Validate() error {
 			if err != nil {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Errorf(err, i18n.T(err.Error()))
+					p.Errorf(err, "%s", i18n.T(err.Error()))
 					return p
 				})
 				os.Exit(1)
@@ -195,7 +195,7 @@ func (e *exportPullOptions) Validate() error {
 			if isStartDateCheckFailed {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Infof(i18n.T("Start date must not be greater than yesterday date"))
+					p.Infof("%s", i18n.T("Start date must not be greater than yesterday date"))
 					return p
 				})
 				os.Exit(1)
@@ -210,7 +210,7 @@ func (e *exportPullOptions) Validate() error {
 			if !endDateMatched {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Infof(i18n.T("Enddate must be in format yyyy-mm-dd"))
+					p.Infof("%s", i18n.T("Enddate must be in format yyyy-mm-dd"))
 					return p
 				})
 				os.Exit(1)
@@ -220,7 +220,7 @@ func (e *exportPullOptions) Validate() error {
 			if err != nil {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Errorf(err, i18n.T(err.Error()))
+					p.Errorf(err, "%s", i18n.T(err.Error()))
 					return p
 				})
 				os.Exit(1)
@@ -229,7 +229,7 @@ func (e *exportPullOptions) Validate() error {
 			if isEndDateCheckFailed {
 				e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 					p := ho
-					p.Infof(i18n.T("End date must not be less than start date or greater than yesterday date"))
+					p.Infof("%s", i18n.T("End date must not be less than start date or greater than yesterday date"))
 					return p
 				})
 				os.Exit(1)
@@ -240,7 +240,7 @@ func (e *exportPullOptions) Validate() error {
 		default:
 			e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 				p := ho
-				p.Infof(i18n.T("Unsupported source type"))
+				p.Infof("%s", i18n.T("Unsupported source type"))
 				return p
 			})
 			os.Exit(1)
@@ -308,7 +308,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 	bundleFile *bundle.BundleFile) error {
 
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-		p.WithDetails("exportFile", currentMeteringExport.FileName).Titlef(i18n.T("pulling sources to file"))
+		p.WithDetails("exportFile", currentMeteringExport.FileName).Titlef("%s", i18n.T("pulling sources to file"))
 		return p.Sub()
 	})
 
@@ -316,7 +316,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 	if err != nil {
 		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 			p := ho
-			p.Errorf(err, i18n.T("failed to get source"))
+			p.Errorf(err, "%s", i18n.T("failed to get source"))
 			return p
 		})
 
@@ -326,7 +326,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
 
 		p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
-		p.Infof(i18n.T("pull start"))
+		p.Infof("%s", i18n.T("pull start"))
 		return p
 	})
 
@@ -334,7 +334,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 
 	if err != nil {
 		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-			p.Errorf(err, i18n.T("pull failed"))
+			p.Errorf(err, "%s", i18n.T("pull failed"))
 			return p
 		})
 
@@ -342,7 +342,7 @@ func (e *exportPullOptions) DataServicePullBase(s *datactlapi.Source, ctx contex
 	}
 
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-		p.WithDetails("count", count).Infof(i18n.T("pull complete"))
+		p.WithDetails("count", count).Infof("%s", i18n.T("pull complete"))
 		return p
 	})
 
@@ -356,7 +356,7 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 	if err != nil {
 		e.printer.HumanOutput(func(ho *output.HumanOutput) *output.HumanOutput {
 			p := ho
-			p.Errorf(err, i18n.T("failed to get source"))
+			p.Errorf(err, "%s", i18n.T("failed to get source"))
 			return p
 		})
 		return -1, EMPTY, err
@@ -364,7 +364,7 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
 		p = p.WithDetails("sourceName", s.Name, "sourceType", s.Type)
-		p.Infof(i18n.T("pull start"))
+		p.Infof("%s", i18n.T("pull start"))
 		return p
 	})
 
@@ -377,7 +377,7 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 
 	if err != nil {
 		e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-			p.Errorf(err, i18n.T("pull failed"))
+			p.Errorf(err, "%s", i18n.T("pull failed"))
 			return p
 		})
 
@@ -385,7 +385,7 @@ func (e *exportPullOptions) IlmtPullBase(s *datactlapi.Source, ctx context.Conte
 	}
 
 	e.printer.HumanOutput(func(p *output.HumanOutput) *output.HumanOutput {
-		p.WithDetails("count", productCount).Infof(i18n.T("pull complete"))
+		p.WithDetails("count", productCount).Infof("%s", i18n.T("pull complete"))
 		return p
 	})
 
