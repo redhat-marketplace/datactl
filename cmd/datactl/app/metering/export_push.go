@@ -189,14 +189,14 @@ func (e *exportPushOptions) Run() error {
 
 	if e.humanOutput {
 		p.WithDetails("uploadHost", e.rhmRawConfig.MarketplaceEndpoint.Host).
-			Titlef(i18n.T("push started"))
+			Titlef("%s", i18n.T("push started"))
 		p = p.Sub()
 
 		if e.dryRun {
-			p.Warnf(i18n.T("dry-run enabled; files will not be pushed"))
+			p.Warnf("%s", i18n.T("dry-run enabled; files will not be pushed"))
 		}
 
-		p.WithDetails("exportFile", file).Infof(i18n.T("pushing files status:"))
+		p.WithDetails("exportFile", file).Infof("%s", i18n.T("pushing files status:"))
 	}
 
 	files := map[string]*dataservicev1.FileInfoCTLAction{}
@@ -287,13 +287,13 @@ func (e *exportPushOptions) Run() error {
 	}
 
 	if e.humanOutput {
-		p.WithDetails("pushed", pushed, "files", found).Infof(i18n.T("push finished"))
+		p.WithDetails("pushed", pushed, "files", found).Infof("%s", i18n.T("push finished"))
 
 		if len(errs) != 0 {
 			p.Errorf(nil, "errors have occurred")
 			p2 := p.Sub()
 			for name, err := range errs {
-				p2.WithDetails("name", name).Errorf(nil, err.Error())
+				p2.WithDetails("name", name).Errorf(nil, "%s", err.Error())
 			}
 		}
 	}
