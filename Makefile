@@ -48,7 +48,7 @@ release: goreleaser
 
 .PHONY: goreleaser
 goreleaser:
-	go install github.com/goreleaser/goreleaser@v1.1.0
+	go install github.com/goreleaser/goreleaser/v2@v2.16.0
 
 tools:
 	go mod download
