@@ -1,6 +1,7 @@
+version: 2
 before:
   hooks:
-    - go mod tidy -go=1.25.0
+    - go mod tidy -go=1.26.0
     - find . -type f -name "*.go" | xargs addlicense -c "IBM Corporation."
 env:
   - CGO_ENABLED=0
@@ -52,11 +53,12 @@ archives:
       {{- else if eq .Arch "linux" }}Linux
       {{- else if eq .Arch "windows" }}Windows
       {{- else }}{{ .Arch }}{{ end }}
-    builds:
+    ids:
       - datactl
       - datactl-arm64
       - datactl-otherarch
-    format: tar.gz
+    format_overrides:
+      - formats: ["tar.gz"]
     files:
       - LICENSE
       - src: './docs/*.md'
@@ -68,7 +70,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: '{{ incpatch .Tag }}-next'
+  version_template: '{{ incpatch .Tag }}-next'
 changelog:
   sort: asc
   filters:
