@@ -112,7 +112,7 @@ func (h *HumanOutput) WithDetails(key string, value interface{}, fields ...inter
 
 func (h HumanOutput) Titlef(format string, a ...interface{}) {
 	cli.Default.Padding = int(h.padding)
-	log.WithFields(h.fields).Infof(color.New(color.Bold).Sprintf(format, a...))
+	log.WithFields(h.fields).Infof("%s", color.New(color.Bold).Sprintf(format, a...))
 }
 
 func (h HumanOutput) Infof(format string, a ...interface{}) {
@@ -122,7 +122,7 @@ func (h HumanOutput) Infof(format string, a ...interface{}) {
 
 func (h HumanOutput) Warnf(format string, a ...interface{}) {
 	cli.Default.Padding = int(h.padding)
-	log.WithFields(h.fields).Warnf(color.New(color.FgYellow, color.Bold).Sprintf(format, a...))
+	log.WithFields(h.fields).Warnf("%s", color.New(color.FgYellow, color.Bold).Sprintf(format, a...))
 }
 
 func (h HumanOutput) Errorf(err error, format string, a ...interface{}) {

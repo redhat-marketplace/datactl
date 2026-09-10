@@ -145,7 +145,7 @@ func NewDatactlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	p := output.NewHumanOutput()
 
 	cmdutil.BehaviorOnFatal(func(msg string, exitCode int) {
-		p.Fatalf(nil, msg)
+		p.Fatalf(nil, "%s", msg)
 	})
 
 	// From this point and forward we get warnings on flags that contain "_" separators
