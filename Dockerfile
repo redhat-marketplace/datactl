@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.26.7 AS build
+FROM registry.access.redhat.com/ubi9/go-toolset:1.27 AS build
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 ARG TARGETOS
@@ -30,5 +30,6 @@ COPY --from=build /opt/app-root/src/go/bin/datactl /usr/local/bin/datactl
 COPY entrypoint.sh .
 
 ENV OPENSSL_FORCE_FIPS_MODE=1
+ENV GODEBUG=fips140=on
 
 ENTRYPOINT ["./entrypoint.sh"]

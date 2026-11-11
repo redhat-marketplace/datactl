@@ -127,6 +127,8 @@ To push data to IBM Software Central execute command
 
 A containerized FIPS enabled version of datactl is provided, built with Red Hat's [go-toolset](https://developers.redhat.com/articles/2022/05/31/your-go-application-fips-compliant)
 
+As of go-toolset v1.27, and the FIPS 140-3 certified Go libraries, the runtime container image is configured with `GODEBUG=fips140=on`.
+
 
 1. Create the `.datactl` directory locally on the host
    ```
